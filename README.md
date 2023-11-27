@@ -93,3 +93,11 @@ how creative candidates get with this.
 -   Write unit tests for your code
 
 We are looking forward to see what you come up with!!
+
+<!-- Comments about my additions -->
+
+-   new weight attribute for obstacles to determine the probability
+-   added jump ramp type
+-   game speed increases with every jump ramp
+
+<!-- Add a list of additions to the game -->

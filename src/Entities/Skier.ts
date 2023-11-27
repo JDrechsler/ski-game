@@ -3,28 +3,56 @@
  * angles, and crashes into obstacles they run into. If caught by the rhino, the skier will get eaten and die.
  */
 
-import { IMAGE_NAMES, DIAGONAL_SPEED_REDUCER, KEYS } from "../Constants";
+import { IMAGE_NAMES, DIAGONAL_SPEED_REDUCER, KEYS, ANIMATION_FRAME_SPEED_MS, IMAGES } from "../Constants";
 import { Entity } from "./Entity";
 import { Canvas } from "../Core/Canvas";
 import { ImageManager } from "../Core/ImageManager";
 import { intersectTwoRects, Rect } from "../Core/Utils";
 import { ObstacleManager } from "./Obstacles/ObstacleManager";
 import { Obstacle } from "./Obstacles/Obstacle";
+import { Animation } from "../Core/Animation";
 
 /**
  * The skier starts running at this speed. Saved in case speed needs to be reset at any point.
  */
-const STARTING_SPEED: number = 10;
+const STARTING_SPEED: number = 4;
+
+/**
+ * The skier jumps for this amount of time in ms before returning to skiing.
+ */
+const JUMPING_TIME: number = 500;
+
+/**
+ * The skier's max speed.
+ */
+const MAX_SPEED: number = 20;
+
+/**
+ * The skier's speed increment. With every jump over a ramp the skier's speed increases by this amount.
+ */
+const SPEED_INCREMENT: number = 0.5;
 
 /**
  * The different states the skier can be in.
  */
-
-enum STATES {
+export enum STATES {
     STATE_SKIING = "skiing",
+    STATE_JUMPING = "jumping",
+    STATE_FLIPPING = "flipping",
     STATE_CRASHED = "crashed",
     STATE_DEAD = "dead",
 }
+
+/**
+ * Sequences of images that comprise the animations for the different jump states of the skier.
+ */
+const IMAGES_FLIP: IMAGE_NAMES[] = [
+    IMAGE_NAMES.SKIER_JUMP1,
+    IMAGE_NAMES.SKIER_JUMP2,
+    IMAGE_NAMES.SKIER_JUMP3,
+    IMAGE_NAMES.SKIER_JUMP4,
+    IMAGE_NAMES.SKIER_JUMP5,
+];
 
 /**
  * The different directions the skier can be facing.
@@ -36,6 +64,15 @@ const DIRECTION_RIGHT_DOWN: number = 3;
 const DIRECTION_RIGHT: number = 4;
 
 /**
+ * The different jump directions the skier can be facing.
+ */
+const JUMP_DIRECTION1: number = 0;
+const JUMP_DIRECTION2: number = 1;
+const JUMP_DIRECTION3: number = 2;
+const JUMP_DIRECTION4: number = 3;
+const JUMP_DIRECTION5: number = 4;
+
+/**
  * Mapping of the image to display for the skier based upon which direction they're facing.
  */
 const DIRECTION_IMAGES: { [key: number]: IMAGE_NAMES } = {
@@ -44,6 +81,17 @@ const DIRECTION_IMAGES: { [key: number]: IMAGE_NAMES } = {
     [DIRECTION_DOWN]: IMAGE_NAMES.SKIER_DOWN,
     [DIRECTION_RIGHT_DOWN]: IMAGE_NAMES.SKIER_RIGHTDOWN,
     [DIRECTION_RIGHT]: IMAGE_NAMES.SKIER_RIGHT,
+};
+
+/**
+ * Mapping of the image to display for the skier based upon which jump direction they're facing.
+ */
+const JUMP_DIRECTION_IMAGES: { [key: number]: IMAGE_NAMES } = {
+    [JUMP_DIRECTION1]: IMAGE_NAMES.SKIER_JUMP1,
+    [JUMP_DIRECTION2]: IMAGE_NAMES.SKIER_JUMP2,
+    [JUMP_DIRECTION3]: IMAGE_NAMES.SKIER_JUMP3,
+    [JUMP_DIRECTION4]: IMAGE_NAMES.SKIER_JUMP4,
+    [JUMP_DIRECTION5]: IMAGE_NAMES.SKIER_JUMP5,
 };
 
 export class Skier extends Entity {
@@ -63,9 +111,34 @@ export class Skier extends Entity {
     direction: number = DIRECTION_DOWN;
 
     /**
+     * What jump direction the skier is currently facing.
+     */
+    jumpDirection: number = DIRECTION_DOWN;
+
+    /**
      * How fast the skier is currently moving in the game world.
      */
     speed: number = STARTING_SPEED;
+
+    /**
+     * Stores all of the animations available for the different states of the skier.
+     */
+    animations: { [key: string]: Animation } = {};
+
+    /**
+     * The animation that the skier is currently using. Typically matches the state the skier is in.
+     */
+    curAnimation: Animation | null = null;
+
+    /**
+     * The current frame of the current animation the skier is on.
+     */
+    curAnimationFrame: number = 0;
+
+    /**
+     * The time in ms of the last frame change. Used to provide a consistent framerate.
+     */
+    curAnimationFrameTime: number = Date.now();
 
     /**
      * Stored reference to the ObstacleManager
@@ -79,6 +152,32 @@ export class Skier extends Entity {
         super(x, y, imageManager, canvas);
 
         this.obstacleManager = obstacleManager;
+        this.setupAnimations();
+        this.setAnimation();
+    }
+
+    /**
+     * Create and store the animations.
+     */
+    setupAnimations() {
+        this.animations[STATES.STATE_FLIPPING] = new Animation(IMAGES_FLIP, false, this.ski.bind(this, DIRECTION_DOWN));
+    }
+
+    /**
+     * Reset the current animation to null.
+     */
+    resetCurrentAnimation() {
+        this.curAnimation = null;
+        this.curAnimationFrame = 0;
+        this.curAnimationFrameTime = Date.now();
+    }
+
+    /**
+     * Set the state and then set a new current animation based upon that state.
+     */
+    setState(newState: STATES) {
+        this.state = newState;
+        this.setAnimation();
     }
 
     /**
@@ -93,6 +192,20 @@ export class Skier extends Entity {
      */
     isSkiing(): boolean {
         return this.state === STATES.STATE_SKIING;
+    }
+
+    /**
+     * Is the skier currently in the jumping state
+     */
+    isJumping(): boolean {
+        return this.state === STATES.STATE_JUMPING;
+    }
+
+    /**
+     * Is the skier currently in the air
+     */
+    isInAir(): boolean {
+        return this.state === STATES.STATE_JUMPING || this.state === STATES.STATE_FLIPPING;
     }
 
     /**
@@ -118,13 +231,30 @@ export class Skier extends Entity {
     }
 
     /**
-     * Move the skier and check to see if they've hit an obstacle. The skier only moves in the skiing state.
+     * Set the current jump direction the skier is facing and update the image accordingly
      */
-    update() {
-        if (this.isSkiing()) {
-            this.move();
-            this.checkIfHitObstacle();
+    setJumpDirection(jumpDirection: number) {
+        this.jumpDirection = jumpDirection;
+        this.setDirectionalJumpImage();
+    }
+
+    /**
+     * Set the skier's image based upon the direction they're facing.
+     */
+    setDirectionalJumpImage() {
+        this.imageName = JUMP_DIRECTION_IMAGES[this.jumpDirection];
+    }
+
+    /**
+     * Move the skier and check to see if they've hit an obstacle if the skier is not dead.
+     */
+    update(gameTime: number) {
+        if (this.isDead()) {
+            return;
         }
+        this.move();
+        this.checkIfHitObstacle();
+        this.animate(gameTime);
     }
 
     /**
@@ -209,10 +339,10 @@ export class Skier extends Entity {
     }
 
     /**
-     * Handle keyboard input. If the skier is dead, don't handle any input.
+     * Handle keyboard input. If the skier is jumping or dead, don't handle any input.
      */
     handleInput(inputKey: string) {
-        if (this.isDead()) {
+        if (this.isDead() || this.isInAir()) {
             return false;
         }
 
@@ -231,6 +361,8 @@ export class Skier extends Entity {
             case KEYS.DOWN:
                 this.turnDown();
                 break;
+            case KEYS.SPACE:
+                this.jump();
             default:
                 handled = false;
         }
@@ -244,7 +376,7 @@ export class Skier extends Entity {
      */
     turnLeft() {
         if (this.isCrashed()) {
-            this.recoverFromCrash(DIRECTION_LEFT);
+            this.ski(DIRECTION_LEFT, STARTING_SPEED);
         }
 
         if (this.direction === DIRECTION_LEFT) {
@@ -260,7 +392,7 @@ export class Skier extends Entity {
      */
     turnRight() {
         if (this.isCrashed()) {
-            this.recoverFromCrash(DIRECTION_RIGHT);
+            this.ski(DIRECTION_RIGHT, STARTING_SPEED);
         }
 
         if (this.direction === DIRECTION_RIGHT) {
@@ -297,6 +429,33 @@ export class Skier extends Entity {
     }
 
     /**
+     * Let the skier jump. If they're crashed don't do anything to require them to move left or right
+     * to escape an obstacle before skiing down again. If they're already jumping, don't let them jump again.
+     */
+    jump() {
+        if (this.isCrashed() && this.isJumping()) {
+            return;
+        }
+
+        this.state = STATES.STATE_JUMPING;
+        this.setJumpDirection(JUMP_DIRECTION1);
+
+        setTimeout(() => {
+            this.ski(DIRECTION_DOWN);
+        }, JUMPING_TIME);
+    }
+
+    /**
+     * Let the skier do a flip in the air.
+     */
+    flip() {
+        if (this.isCrashed()) {
+            return;
+        }
+        this.setState(STATES.STATE_FLIPPING);
+    }
+
+    /**
      * The skier has a bit different bounds calculating than a normal entity to make the collision with obstacles more
      * natural. We want te skier to end up in the obstacle rather than right above it when crashed, so move the bottom
      * boundary up.
@@ -316,7 +475,9 @@ export class Skier extends Entity {
     }
 
     /**
-     * Go through all the obstacles in the game and see if the skier collides with any of them. If so, crash the skier.
+     * Go through all the obstacles in the game and see if the skier collides with any of them.
+     * If the skier colides with an obstacle while skiing make the skier crash.
+     * If the skier is jumping make the skier crash if he colides with a tree art type.
      */
     checkIfHitObstacle() {
         const skierBounds = this.getBounds();
@@ -334,7 +495,19 @@ export class Skier extends Entity {
         });
 
         if (collision) {
-            this.crash();
+            if (this.state === STATES.STATE_SKIING) {
+                if (collision.imageName === IMAGE_NAMES.JUMP_RAMP) {
+                    this.flip();
+                    this.increaseSpeed();
+                } else {
+                    this.crash();
+                }
+            }
+            if (this.isInAir()) {
+                if (collision.imageName === IMAGE_NAMES.TREE || collision.imageName === IMAGE_NAMES.TREE_CLUSTER) {
+                    this.crash();
+                }
+            }
         }
     }
 
@@ -343,19 +516,89 @@ export class Skier extends Entity {
      * image.
      */
     crash() {
+        this.resetCurrentAnimation();
         this.state = STATES.STATE_CRASHED;
         this.speed = 0;
         this.imageName = IMAGE_NAMES.SKIER_CRASH;
     }
 
     /**
-     * Change the skier back to the skiing state, get them moving again at the starting speed and set them facing
-     * whichever direction they're recovering to.
+     * Change the skier to the skiing state, get them moving at the starting speed and set them facing
+     * whichever direction they're set to.
      */
-    recoverFromCrash(newDirection: number) {
+    ski(newDirection: number, newSpeed: number = this.speed) {
         this.state = STATES.STATE_SKIING;
-        this.speed = STARTING_SPEED;
+        this.speed = newSpeed;
         this.setDirection(newDirection);
+    }
+
+    /**
+     * Set the current animation, reset to the beginning of the animation and set the proper image to display.
+     */
+    setAnimation() {
+        this.curAnimation = this.animations[this.state];
+        if (!this.curAnimation) {
+            return;
+        }
+
+        this.curAnimationFrame = 0;
+
+        const animateImages = this.curAnimation.getImages();
+        this.imageName = animateImages[this.curAnimationFrame];
+    }
+
+    /**
+     * Advance to the next frame in the current animation if enough time has elapsed since the previous frame.
+     */
+    animate(gameTime: number) {
+        if (!this.curAnimation) {
+            return;
+        }
+
+        if (gameTime - this.curAnimationFrameTime > ANIMATION_FRAME_SPEED_MS) {
+            this.nextAnimationFrame(gameTime);
+        }
+    }
+
+    /**
+     * Increase the current animation frame and update the image based upon the sequence of images for the animation.
+     * If the animation isn't looping, then finish the animation instead.
+     */
+    nextAnimationFrame(gameTime: number) {
+        if (!this.curAnimation) {
+            return;
+        }
+
+        const animationImages = this.curAnimation.getImages();
+
+        this.curAnimationFrameTime = gameTime;
+        this.curAnimationFrame++;
+        if (this.curAnimationFrame >= animationImages.length) {
+            if (!this.curAnimation.getLooping()) {
+                this.finishAnimation();
+                return;
+            }
+
+            this.curAnimationFrame = 0;
+        }
+
+        this.imageName = animationImages[this.curAnimationFrame];
+    }
+
+    /**
+     * The current animation wasn't looping, so finish it by clearing out the current animation and firing the callback.
+     */
+    finishAnimation() {
+        if (!this.curAnimation) {
+            return;
+        }
+
+        const animationCallback = this.curAnimation.getCallback();
+        this.curAnimation = null;
+
+        if (animationCallback) {
+            animationCallback.apply(null);
+        }
     }
 
     /**
@@ -364,5 +607,14 @@ export class Skier extends Entity {
     die() {
         this.state = STATES.STATE_DEAD;
         this.speed = 0;
+    }
+
+    /**
+     * Increase the skier speed by the speed increment. If the skier is already at the max speed, don't increase it.
+     */
+    increaseSpeed() {
+        if (this.speed < MAX_SPEED) {
+            this.speed += SPEED_INCREMENT;
+        }
     }
 }

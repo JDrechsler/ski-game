@@ -35,8 +35,13 @@ export class ImageManager {
         return new Promise((resolve) => {
             const loadedImage = new Image();
             loadedImage.onload = () => {
-                loadedImage.width *= SCALE;
-                loadedImage.height *= SCALE;
+                if (image.name === IMAGE_NAMES.JUMP_RAMP) {
+                    loadedImage.width *= SCALE * 2;
+                    loadedImage.height *= SCALE * 2;
+                } else {
+                    loadedImage.width *= SCALE;
+                    loadedImage.height *= SCALE;
+                }
 
                 this.loadedImages[image.name] = loadedImage;
                 resolve();

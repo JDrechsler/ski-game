@@ -2,13 +2,13 @@
  * The main game class. This initializes the game as well as runs the game/render loop and initial handling of input.
  */
 
-import { GAME_CANVAS, GAME_WIDTH, GAME_HEIGHT, IMAGES } from "../Constants";
+import { GAME_CANVAS, GAME_WIDTH, GAME_HEIGHT, IMAGES, KEYS } from "../Constants";
 import { Canvas } from "./Canvas";
 import { ImageManager } from "./ImageManager";
 import { Position, Rect } from "./Utils";
 import { ObstacleManager } from "../Entities/Obstacles/ObstacleManager";
 import { Rhino } from "../Entities/Rhino";
-import { Skier } from "../Entities/Skier";
+import { STATES, Skier } from "../Entities/Skier";
 
 export class Game {
     /**
@@ -30,6 +30,10 @@ export class Game {
 
     private obstacleManager!: ObstacleManager;
 
+    private paused: boolean;
+
+    private score: number;
+
     /**
      * The skier player
      */
@@ -46,6 +50,8 @@ export class Game {
     constructor() {
         this.init();
         this.setupInputHandling();
+        this.paused = false;
+        this.score = 0;
     }
 
     /**
@@ -94,14 +100,19 @@ export class Game {
      * Do any updates needed to the game objects
      */
     updateGameWindow() {
+        if (this.paused) {
+            return;
+        }
         this.gameTime = Date.now();
+
+        this.updateGameScore();
 
         const previousGameWindow: Rect = this.gameWindow;
         this.calculateGameWindow();
 
         this.obstacleManager.placeNewObstacle(this.gameWindow, previousGameWindow);
 
-        this.skier.update();
+        this.skier.update(this.gameTime);
         this.rhino.update(this.gameTime, this.skier);
     }
 
@@ -115,6 +126,9 @@ export class Game {
         this.skier.draw();
         this.rhino.draw();
         this.obstacleManager.drawObstacles();
+
+        this.drawScore();
+        this.drawMenuMessages();
     }
 
     /**
@@ -130,13 +144,95 @@ export class Game {
     }
 
     /**
-     * Handle keypresses and delegate to any game objects that might have key handling of their own.
+     * Handle key presses and delegate to any game objects that might have key handling of their own.
      */
     handleKeyDown(event: KeyboardEvent) {
         let handled: boolean = this.skier.handleInput(event.key);
 
+        switch (event.key) {
+            case KEYS.P:
+            case KEYS.ESC:
+                this.paused ? this.resume() : this.pause();
+            default:
+                handled = false;
+        }
+
         if (handled) {
             event.preventDefault();
+        }
+    }
+
+    /**
+     * Pause the game
+     */
+    pause() {
+        if (this.skier.state === STATES.STATE_SKIING) {
+            this.paused = true;
+        }
+    }
+
+    /**
+     * Resume the game
+     */
+    resume() {
+        this.paused = false;
+    }
+
+    /**
+     * Draw a menu message to the screen.
+     */
+    drawMenuMessage(message: string, menuOpacity: number = 0.5, ctx: CanvasRenderingContext2D = this.canvas.ctx) {
+        ctx.fillStyle = `rgba(0, 0, 0, ${menuOpacity})`;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.font = "30px Arial";
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        ctx.fillText(message, this.canvas.width / 2, this.canvas.height / 2);
+    }
+
+    /**
+     * Draw the current game score to the screen.
+     */
+    drawScore(ctx: CanvasRenderingContext2D = this.canvas.ctx) {
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "left";
+        ctx.fillText(`Score: ${this.score}`, 10, 30);
+    }
+
+    /**
+     * Draw any menu messages that need to be displayed.
+     */
+    drawMenuMessages() {
+        if (this.paused) {
+            this.drawMenuMessage(`Game paused! Your score is ${this.score}!`);
+        }
+
+        if (this.skier.state === STATES.STATE_CRASHED) {
+            this.drawMenuMessage(`You crashed! You can keep moving. Be aware of the obstacles!`, 0.2);
+        }
+
+        if (this.skier.state === STATES.STATE_DEAD) {
+            this.drawMenuMessage(`Game over! Your score was ${this.score}!`, 0.5);
+        }
+    }
+
+    /**
+     * Update the game score based upon the skier's current state.
+     */
+    updateGameScore() {
+        switch (this.skier.state) {
+            case STATES.STATE_SKIING:
+                this.score += 1;
+                break;
+            case STATES.STATE_JUMPING:
+                this.score += 10;
+                break;
+            case STATES.STATE_FLIPPING:
+                this.score += 100;
+                break;
+            default:
+                break;
         }
     }
 }

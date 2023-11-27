@@ -3,7 +3,7 @@
  * obstacles, places new obstacles as the skier moves throughout the world and displays them all to the screen.
  */
 
-import { GAME_WIDTH, GAME_HEIGHT } from "../../Constants";
+import { GAME_WIDTH, GAME_HEIGHT, IMAGE_NAMES } from "../../Constants";
 import { Canvas } from "../../Core/Canvas";
 import { ImageManager } from "../../Core/ImageManager";
 import { Position, randomInt, Rect } from "../../Core/Utils";
