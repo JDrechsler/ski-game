@@ -94,10 +94,33 @@ how creative candidates get with this.
 
 We are looking forward to see what you come up with!!
 
-<!-- Comments about my additions -->
+**New Game Additions**
 
--   new weight attribute for obstacles to determine the probability
--   added jump ramp type
--   game speed increases with every jump ramp
+-   Jump ramps added to the game world and appear randomly as the skier skis.
+-   The skier can enter the jumping state when they hit the jump ramp.
+-   The skier can also enter the jumping state when the user presses the spacebar.
+-   The skier will do a flip while jumping when using the ramp. The skier will not do a flip when regular jumping without a jump ramp. This decision was made to allow for more variety of animations and also it is unlickely that a skier can do a whole flip doing short jumps.
+-   While jumping, the skier is able to jump over some obstacles:
 
-<!-- Add a list of additions to the game -->
+    -   Rocks can be jumped over
+    -   Trees can NOT be jumped over
+
+-   New weight attributes for obstacles to determine the probability of drawing a specific obstacle. This was added in order to keep the probabilities clean and allow easy additions for other obstacles later on. This also allows to create different levels later on with different biomes using specific probabilities.
+-   Game speed increases with every jump ramp. If you don't want to get caught by the rhino use the jump ramps in order to gain speed.
+-   Pause Menu was added. It can be triggered by pressing P or Esc on the keyboard
+-   A score was added to the game that will increase with time, jumps and flips
+-   A Game Over menu screen was added that will be displayed when the skier gets caughed by the rhino.
+
+**How to play**
+
+The game can be played here:
+https://jdrechsler.github.io/ski-game/
+
+Try to collect as many points as possible!
+Don't get caught by the rhino. Use the jump ramps in order to gain speed. BUT beware of obstacles in the world. Trees cannot be jumped over.
+
+Available Hotkeys:
+
+-   Arrow keys: Used to navigate within the game world
+-   Jump: Let the skier jump. The skier can jump over rocks but not trees
+-   P / Esc: Pause the game
