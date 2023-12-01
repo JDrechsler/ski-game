@@ -51,8 +51,12 @@ const IMAGES_FLIP: IMAGE_NAMES[] = [
     IMAGE_NAMES.SKIER_JUMP2,
     IMAGE_NAMES.SKIER_JUMP3,
     IMAGE_NAMES.SKIER_JUMP4,
-    IMAGE_NAMES.SKIER_JUMP5,
+    // IMAGE_NAMES.SKIER_JUMP5,
 ];
+
+const IMAGES_JUMP: IMAGE_NAMES[] = [
+    IMAGE_NAMES.SKIER_JUMP1,
+]
 
 /**
  * The different directions the skier can be facing.
@@ -67,10 +71,6 @@ const DIRECTION_RIGHT: number = 4;
  * The different jump directions the skier can be facing.
  */
 const JUMP_DIRECTION1: number = 0;
-const JUMP_DIRECTION2: number = 1;
-const JUMP_DIRECTION3: number = 2;
-const JUMP_DIRECTION4: number = 3;
-const JUMP_DIRECTION5: number = 4;
 
 /**
  * Mapping of the image to display for the skier based upon which direction they're facing.
@@ -81,17 +81,6 @@ const DIRECTION_IMAGES: { [key: number]: IMAGE_NAMES } = {
     [DIRECTION_DOWN]: IMAGE_NAMES.SKIER_DOWN,
     [DIRECTION_RIGHT_DOWN]: IMAGE_NAMES.SKIER_RIGHTDOWN,
     [DIRECTION_RIGHT]: IMAGE_NAMES.SKIER_RIGHT,
-};
-
-/**
- * Mapping of the image to display for the skier based upon which jump direction they're facing.
- */
-const JUMP_DIRECTION_IMAGES: { [key: number]: IMAGE_NAMES } = {
-    [JUMP_DIRECTION1]: IMAGE_NAMES.SKIER_JUMP1,
-    [JUMP_DIRECTION2]: IMAGE_NAMES.SKIER_JUMP2,
-    [JUMP_DIRECTION3]: IMAGE_NAMES.SKIER_JUMP3,
-    [JUMP_DIRECTION4]: IMAGE_NAMES.SKIER_JUMP4,
-    [JUMP_DIRECTION5]: IMAGE_NAMES.SKIER_JUMP5,
 };
 
 export class Skier extends Entity {
@@ -160,7 +149,12 @@ export class Skier extends Entity {
      * Create and store the animations.
      */
     setupAnimations() {
-        this.animations[STATES.STATE_FLIPPING] = new Animation(IMAGES_FLIP, false, this.ski.bind(this, DIRECTION_DOWN));
+        this.animations[STATES.STATE_FLIPPING] = new Animation(IMAGES_FLIP, false, () => this.ski(this.direction, this.speed));
+        this.animations[STATES.STATE_JUMPING] = new Animation(IMAGES_JUMP, false, () => {
+            setTimeout(() => {
+                this.ski(this.direction, this.speed);                
+            }, JUMPING_TIME);
+        })
     }
 
     /**
@@ -228,21 +222,6 @@ export class Skier extends Entity {
      */
     setDirectionalImage() {
         this.imageName = DIRECTION_IMAGES[this.direction];
-    }
-
-    /**
-     * Set the current jump direction the skier is facing and update the image accordingly
-     */
-    setJumpDirection(jumpDirection: number) {
-        this.jumpDirection = jumpDirection;
-        this.setDirectionalJumpImage();
-    }
-
-    /**
-     * Set the skier's image based upon the direction they're facing.
-     */
-    setDirectionalJumpImage() {
-        this.imageName = JUMP_DIRECTION_IMAGES[this.jumpDirection];
     }
 
     /**
@@ -355,9 +334,6 @@ export class Skier extends Entity {
             case KEYS.RIGHT:
                 this.turnRight();
                 break;
-            case KEYS.UP:
-                this.turnUp();
-                break;
             case KEYS.DOWN:
                 this.turnDown();
                 break;
@@ -378,12 +354,7 @@ export class Skier extends Entity {
         if (this.isCrashed()) {
             this.ski(DIRECTION_LEFT, STARTING_SPEED);
         }
-
-        if (this.direction === DIRECTION_LEFT) {
-            this.moveSkierLeft();
-        } else {
-            this.setDirection(this.direction - 1);
-        }
+        this.setDirection(DIRECTION_LEFT_DOWN);
     }
 
     /**
@@ -394,26 +365,7 @@ export class Skier extends Entity {
         if (this.isCrashed()) {
             this.ski(DIRECTION_RIGHT, STARTING_SPEED);
         }
-
-        if (this.direction === DIRECTION_RIGHT) {
-            this.moveSkierRight();
-        } else {
-            this.setDirection(this.direction + 1);
-        }
-    }
-
-    /**
-     * Turn the skier up which basically means if they're facing left or right, then move them up a bit in the game world.
-     * If they're in the crashed state, do nothing as you can't move up if you're crashed.
-     */
-    turnUp() {
-        if (this.isCrashed()) {
-            return;
-        }
-
-        if (this.direction === DIRECTION_LEFT || this.direction === DIRECTION_RIGHT) {
-            this.moveSkierUp();
-        }
+        this.setDirection(DIRECTION_RIGHT_DOWN);
     }
 
     /**
@@ -436,13 +388,7 @@ export class Skier extends Entity {
         if (this.isCrashed() && this.isJumping()) {
             return;
         }
-
-        this.state = STATES.STATE_JUMPING;
-        this.setJumpDirection(JUMP_DIRECTION1);
-
-        setTimeout(() => {
-            this.ski(DIRECTION_DOWN);
-        }, JUMPING_TIME);
+        this.setState(STATES.STATE_JUMPING);
     }
 
     /**
@@ -505,7 +451,9 @@ export class Skier extends Entity {
             }
             if (this.isInAir()) {
                 if (collision.imageName === IMAGE_NAMES.TREE || collision.imageName === IMAGE_NAMES.TREE_CLUSTER) {
-                    this.crash();
+                    if(this.isJumping()) {
+                        this.crash();
+                    }
                 }
             }
         }
