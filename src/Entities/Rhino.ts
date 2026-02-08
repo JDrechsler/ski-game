@@ -52,6 +52,10 @@ export class Rhino extends Entity {
      */
     speed: number = STARTING_SPEED;
 
+    speedMultiplier: number = 1;
+
+    speedMultiplierExpiresAt: number = 0;
+
     /**
      * Stores all of the animations available for the different states of the rhino.
      */
@@ -113,6 +117,11 @@ export class Rhino extends Entity {
      * it only moves if it's running.
      */
     update(gameTime: number, target: Entity) {
+        if (this.speedMultiplierExpiresAt > 0 && gameTime >= this.speedMultiplierExpiresAt) {
+            this.speedMultiplier = 1;
+            this.speedMultiplierExpiresAt = 0;
+        }
+
         if (this.isRunning()) {
             this.move(target);
             this.checkIfCaughtTarget(target);
@@ -133,8 +142,15 @@ export class Rhino extends Entity {
         const targetPosition = target.getPosition();
         const moveDirection = getDirectionVector(this.position.x, this.position.y, targetPosition.x, targetPosition.y);
 
-        this.position.x += moveDirection.x * this.speed;
-        this.position.y += moveDirection.y * this.speed;
+        this.position.x += moveDirection.x * this.speed * this.speedMultiplier;
+        this.position.y += moveDirection.y * this.speed * this.speedMultiplier;
+    }
+
+    setSpeedMultiplier(multiplier: number, durationMs: number = 0) {
+        this.speedMultiplier = multiplier;
+        if (durationMs > 0) {
+            this.speedMultiplierExpiresAt = Date.now() + durationMs;
+        }
     }
 
     /**

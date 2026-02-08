@@ -12,10 +12,14 @@ import {
 } from "../Constants";
 import { Canvas } from "./Canvas";
 import { ImageManager } from "./ImageManager";
-import { Position, Rect } from "./Utils";
+import { intersectTwoRects, Position, Rect } from "./Utils";
 import { ObstacleManager } from "../Entities/Obstacles/ObstacleManager";
 import { Rhino } from "../Entities/Rhino";
 import { STATES, Skier } from "../Entities/Skier";
+import { getBiomeForScore } from "./Config/biomes";
+import { iBiome } from "../Interfaces/iObstacleType";
+import { PowerupManager } from "../Entities/Powerups/PowerupManager";
+import { POWERUP_TYPES } from "../Entities/Powerups/Powerup";
 
 export class Game {
   /**
@@ -37,9 +41,21 @@ export class Game {
 
   private obstacleManager!: ObstacleManager;
 
+  private powerupManager!: PowerupManager;
+
   private paused: boolean;
 
   private score: number;
+
+  private activeBiome!: iBiome;
+
+  private activeEventName: string = "";
+
+  private eventEndsAt: number = 0;
+
+  private nextEventAt: number = 0;
+
+  private boostEndsAt: number = 0;
 
   /**
    * The skier player
@@ -68,6 +84,7 @@ export class Game {
     this.canvas = new Canvas(GAME_CANVAS, GAME_WIDTH, GAME_HEIGHT);
     this.imageManager = new ImageManager();
     this.obstacleManager = new ObstacleManager(this.imageManager, this.canvas);
+    this.powerupManager = new PowerupManager(this.imageManager, this.canvas);
 
     this.skier = new Skier(
       0,
@@ -80,6 +97,10 @@ export class Game {
 
     this.calculateGameWindow();
     this.obstacleManager.placeInitialObstacles();
+    this.powerupManager.placeInitialPowerups();
+    this.activeBiome = getBiomeForScore(0);
+    this.obstacleManager.setBiome(this.activeBiome);
+    this.nextEventAt = Date.now() + 12000;
   }
 
   /**
@@ -154,6 +175,12 @@ export class Game {
     this.calculateGameWindow();
 
     this.obstacleManager.placeNewObstacle(this.gameWindow, previousGameWindow);
+    this.powerupManager.placeNewPowerup(this.gameWindow, previousGameWindow);
+    this.collectPowerups();
+
+    this.updateBiome();
+    this.updateEventState();
+    this.updateBoost();
 
     this.skier.update(this.gameTime);
     this.rhino.update(this.gameTime, this.skier);
@@ -169,6 +196,7 @@ export class Game {
     this.skier.draw();
     this.rhino.draw();
     this.obstacleManager.drawObstacles();
+    this.powerupManager.drawPowerups();
 
     this.drawScore();
     this.drawMenuMessages();
@@ -203,9 +231,11 @@ export class Game {
           break;
         case KEYS.SPACE:
           this.skier.jump();
+          break;
         case KEYS.P:
         case KEYS.ESC:
           this.paused ? this.resume() : this.pause();
+          break;
         default:
           break;
       }
@@ -267,6 +297,17 @@ export class Game {
     ctx.fillStyle = "black";
     ctx.textAlign = "left";
     ctx.fillText(`Score: ${this.score}`, 10, 30);
+
+    ctx.fillText(`Combo x${this.skier.getComboMultiplier()}`, 10, 55);
+    if (this.skier.getComboRemainingMs() > 0) {
+      ctx.fillText(`Combo timer: ${(this.skier.getComboRemainingMs() / 1000).toFixed(1)}s`, 10, 80);
+    }
+
+    ctx.fillText(`Biome: ${this.activeBiome.name}`, 10, 105);
+
+    if (this.activeEventName) {
+      ctx.fillText(`Event: ${this.activeEventName}`, 10, 130);
+    }
   }
 
   /**
@@ -293,15 +334,90 @@ export class Game {
    * Update the game score based upon the skier's current state.
    */
   updateGameScore() {
+    const comboMultiplier = this.skier.getComboMultiplier();
+
     switch (this.skier.state) {
       case STATES.STATE_SKIING:
-        this.score += 1;
+        this.score += Math.floor(1 * comboMultiplier);
         break;
       case STATES.STATE_JUMPING:
-        this.score += 10;
+        this.score += Math.floor(10 * comboMultiplier);
         break;
       case STATES.STATE_FLIPPING:
-        this.score += 100;
+        this.score += Math.floor(100 * comboMultiplier);
+        break;
+      default:
+        break;
+    }
+  }
+
+  updateBiome() {
+    const biome = getBiomeForScore(this.score);
+    if (biome.name !== this.activeBiome.name) {
+      this.activeBiome = biome;
+      this.obstacleManager.setBiome(biome);
+    }
+  }
+
+  updateEventState() {
+    if (this.eventEndsAt > 0 && Date.now() >= this.eventEndsAt) {
+      this.activeEventName = "";
+      this.eventEndsAt = 0;
+      this.obstacleManager.setSpawnChanceModifier(0);
+      this.rhino.setSpeedMultiplier(1);
+    }
+
+    if (this.eventEndsAt === 0 && Date.now() >= this.nextEventAt) {
+      const isFrenzy = Math.random() > 0.5;
+      if (isFrenzy) {
+        this.activeEventName = "Rhino Frenzy";
+        this.rhino.setSpeedMultiplier(1.5);
+      } else {
+        this.activeEventName = "Dense Forest";
+        this.obstacleManager.setSpawnChanceModifier(-2);
+      }
+
+      this.eventEndsAt = Date.now() + 6000;
+      this.nextEventAt = Date.now() + 18000;
+    }
+  }
+
+  updateBoost() {
+    if (this.boostEndsAt > 0 && Date.now() >= this.boostEndsAt) {
+      this.boostEndsAt = 0;
+    }
+  }
+
+  collectPowerups() {
+    const skierBounds = this.skier.getBounds();
+    if (!skierBounds) {
+      return;
+    }
+
+    this.powerupManager.getPowerups().forEach((powerup) => {
+      const powerupBounds = powerup.getBounds();
+      if (!powerupBounds) {
+        return;
+      }
+
+      if (intersectTwoRects(skierBounds, powerupBounds)) {
+        this.applyPowerup(powerup.type);
+        this.powerupManager.removePowerup(powerup);
+      }
+    });
+  }
+
+  applyPowerup(powerupType: POWERUP_TYPES) {
+    switch (powerupType) {
+      case POWERUP_TYPES.BOOST:
+        this.skier.increaseSpeedBy(2);
+        this.boostEndsAt = Date.now() + 3000;
+        break;
+      case POWERUP_TYPES.RHINO_CHILL:
+        this.rhino.setSpeedMultiplier(0.6, 3500);
+        break;
+      case POWERUP_TYPES.COMBO_BURST:
+        this.skier.addCombo(2);
         break;
       default:
         break;

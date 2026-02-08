@@ -38,6 +38,8 @@ const MAX_SPEED: number = 20;
  * The skier's speed increment. With every jump over a ramp the skier's speed increases by this amount.
  */
 const SPEED_INCREMENT: number = 0.5;
+const COMBO_WINDOW_MS: number = 3000;
+const MAX_COMBO_MULTIPLIER: number = 6;
 
 /**
  * The different states the skier can be in.
@@ -113,6 +115,10 @@ export class Skier extends Entity {
    * How fast the skier is currently moving in the game world.
    */
   speed: number = STARTING_SPEED;
+
+  comboMultiplier: number = 1;
+
+  comboExpiresAt: number = 0;
 
   /**
    * Stores all of the animations available for the different states of the skier.
@@ -253,6 +259,11 @@ export class Skier extends Entity {
     if (this.isDead()) {
       return;
     }
+
+    if (this.comboExpiresAt > 0 && gameTime >= this.comboExpiresAt) {
+      this.resetCombo();
+    }
+
     this.move();
     this.checkIfHitObstacle();
     this.animate(gameTime);
@@ -414,6 +425,7 @@ export class Skier extends Entity {
       return;
     }
     this.setState(STATES.STATE_FLIPPING);
+    this.addCombo(1);
   }
 
   /**
@@ -488,6 +500,7 @@ export class Skier extends Entity {
     this.state = STATES.STATE_CRASHED;
     this.speed = 0;
     this.imageName = IMAGE_NAMES.SKIER_CRASH;
+    this.resetCombo();
   }
 
   /**
@@ -575,6 +588,7 @@ export class Skier extends Entity {
   die() {
     this.state = STATES.STATE_DEAD;
     this.speed = 0;
+    this.resetCombo();
   }
 
   /**
@@ -584,5 +598,31 @@ export class Skier extends Entity {
     if (this.speed < MAX_SPEED) {
       this.speed += SPEED_INCREMENT;
     }
+  }
+
+  increaseSpeedBy(value: number) {
+    this.speed = Math.min(MAX_SPEED, this.speed + value);
+  }
+
+  addCombo(value: number) {
+    this.comboMultiplier = Math.min(MAX_COMBO_MULTIPLIER, this.comboMultiplier + value);
+    this.comboExpiresAt = Date.now() + COMBO_WINDOW_MS;
+  }
+
+  resetCombo() {
+    this.comboMultiplier = 1;
+    this.comboExpiresAt = 0;
+  }
+
+  getComboMultiplier(): number {
+    return this.comboMultiplier;
+  }
+
+  getComboRemainingMs(): number {
+    if (this.comboExpiresAt === 0) {
+      return 0;
+    }
+
+    return Math.max(0, this.comboExpiresAt - Date.now());
   }
 }

@@ -11,7 +11,7 @@ import { Entity } from "../Entity";
 /**
  * The different types of obstacles that can be placed in the game.
  */
-const OBSTACLE_TYPES: iObstacleType[] = [
+export const DEFAULT_OBSTACLE_TYPES: iObstacleType[] = [
     { imageName: IMAGE_NAMES.TREE, weight: 30 },
     { imageName: IMAGE_NAMES.TREE_CLUSTER, weight: 30 },
     { imageName: IMAGE_NAMES.ROCK1, weight: 20 },
@@ -33,19 +33,25 @@ export class Obstacle extends Entity {
     /**
      * Initialize an obstacle and make it a random type.
      */
-    constructor(x: number, y: number, imageManager: ImageManager, canvas: Canvas) {
+    constructor(
+        x: number,
+        y: number,
+        imageManager: ImageManager,
+        canvas: Canvas,
+        obstacleTypes: iObstacleType[] = DEFAULT_OBSTACLE_TYPES
+    ) {
         super(x, y, imageManager, canvas);
 
-        const typeIdx = this.getRandomObstacleType();
-        this.imageName = OBSTACLE_TYPES[typeIdx].imageName;
+        const typeIdx = this.getRandomObstacleType(obstacleTypes);
+        this.imageName = obstacleTypes[typeIdx].imageName;
     }
 
     /**
      * Determines a random obstacle type using the obstacle weight.
      */
-    getRandomObstacleType(): number {
+    getRandomObstacleType(obstacleTypes: iObstacleType[]): number {
         let totalWeight = 0;
-        const weights = OBSTACLE_TYPES.map((type) => {
+        const weights = obstacleTypes.map((type) => {
             const weight = type.weight;
             totalWeight += weight;
             return weight;
@@ -59,7 +65,7 @@ export class Obstacle extends Entity {
             randomNum -= weights[i];
         }
 
-        return OBSTACLE_TYPES.length - 1; // default to the last type if no match
+        return obstacleTypes.length - 1; // default to the last type if no match
     }
 
     /**

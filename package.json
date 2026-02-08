@@ -8,7 +8,8 @@
         "build": "webpack --mode production --output-path docs",
         "test": "jest",
         "start": "node server.js",
-        "prettier": "prettier --write ."
+        "prettier": "prettier --write .",
+        "build:preview": "webpack --mode production --output-path docs-fun"
     },
     "repository": {
         "type": "git",

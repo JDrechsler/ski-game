@@ -7,7 +7,8 @@ import { GAME_WIDTH, GAME_HEIGHT, IMAGE_NAMES } from "../../Constants";
 import { Canvas } from "../../Core/Canvas";
 import { ImageManager } from "../../Core/ImageManager";
 import { Position, randomInt, Rect } from "../../Core/Utils";
-import { Obstacle } from "./Obstacle";
+import { iBiome, iObstacleType } from "../../Interfaces/iObstacleType";
+import { DEFAULT_OBSTACLE_TYPES, Obstacle } from "./Obstacle";
 
 /**
  * Ensures that obstacles aren't too close together
@@ -28,7 +29,7 @@ const STARTING_OBSTACLE_REDUCER: number = 300;
 /**
  * The chance that a new obstacle will be placed as the skier is moving. A lower number increases the chances.
  */
-const NEW_OBSTACLE_CHANCE: number = 8;
+const DEFAULT_OBSTACLE_CHANCE: number = 8;
 
 export class ObstacleManager {
     /**
@@ -45,6 +46,12 @@ export class ObstacleManager {
      * Stored reference to the Canvas obstacles are drawn to
      */
     canvas: Canvas;
+
+    obstacleTypes: iObstacleType[] = DEFAULT_OBSTACLE_TYPES;
+
+    obstacleSpawnChance: number = DEFAULT_OBSTACLE_CHANCE;
+
+    spawnChanceModifier: number = 0;
 
     /**
      * Init the Obstacle Manager.
@@ -92,8 +99,9 @@ export class ObstacleManager {
      * it has moved in and try to place a new obstacle offscreen (so player doesn't see it pop in) in that direction(s).
      */
     placeNewObstacle(gameWindow: Rect, previousGameWindow: Rect) {
-        const shouldPlaceObstacle = randomInt(1, NEW_OBSTACLE_CHANCE);
-        if (shouldPlaceObstacle !== NEW_OBSTACLE_CHANCE) {
+        const spawnChance = Math.max(2, this.obstacleSpawnChance + this.spawnChanceModifier);
+        const shouldPlaceObstacle = randomInt(1, spawnChance);
+        if (shouldPlaceObstacle !== spawnChance) {
             return;
         }
 
@@ -152,9 +160,18 @@ export class ObstacleManager {
             position = this.calculateOpenPosition(placementArea);
         } while (!position);
 
-        const newObstacle = new Obstacle(position.x, position.y, this.imageManager, this.canvas);
+        const newObstacle = new Obstacle(position.x, position.y, this.imageManager, this.canvas, this.obstacleTypes);
 
         this.obstacles.push(newObstacle);
+    }
+
+    setBiome(biome: iBiome) {
+        this.obstacleTypes = biome.obstacleTypes;
+        this.obstacleSpawnChance = biome.obstacleSpawnChance;
+    }
+
+    setSpawnChanceModifier(modifier: number) {
+        this.spawnChanceModifier = modifier;
     }
 
     /**
