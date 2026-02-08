@@ -141,29 +141,26 @@ This branch now includes four experimental systems that can be tested before pro
 4. **Event moments**
    - Temporary events trigger during runs (e.g., Rhino Frenzy, Dense Forest).
 
-## Preview deployment (Netlify deploy previews)
+## Deployment strategy
 
-Netlify is now the recommended preview platform for this repo.
+### 1) Netlify for MR/PR preview URLs
 
-### Why Netlify here
+Netlify is configured for preview testing during merge requests / pull requests.
 
-- It creates a unique **Deploy Preview URL** for each pull request / merge request automatically.
-- It does not overwrite your existing GitHub Pages production URL.
-- It gives a stable production URL plus per-branch/per-PR preview URLs.
+- each MR/PR gets a unique **Deploy Preview URL**
+- great for testing feature changes before merge
+- uses `netlify.toml` (`npm run build`, publish `docs/`)
 
-### Repo config
+### 2) GitHub Pages for live production site
 
-This repository now includes `netlify.toml` configured to:
+GitHub Pages is kept for the real live site and should deploy from `main`.
 
-- run `npm run build`
-- publish from `docs/`
-- use SPA redirect fallback to `index.html`
+- workflow: `.github/workflows/pages-live.yml`
+- trigger: push to `main` (or manual dispatch)
+- build: `npm run build`
+- publish directory: `docs/`
 
-### Expected workflow
-
-1. Push your branch and open/update an MR/PR.
-2. Netlify bot should post a **Deploy Preview** link on the MR/PR.
-3. Use that URL for testing before merge.
-
-If you want, next I can also remove the GitHub Pages workflow to avoid deployment confusion and keep Netlify as the single preview path.
+This gives you exactly the split you asked for:
+- **Netlify** = previews during MR/PR
+- **GitHub Pages** = live site after merge to `main`
 
