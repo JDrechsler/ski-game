@@ -4,45 +4,45 @@ import { iBiome } from "../../Interfaces/iObstacleType";
 export const BIOMES: iBiome[] = [
     {
         name: "Alpine Warmup",
-        obstacleSpawnChance: 8,
+        obstacleSpawnChance: 12,
         obstacleTypes: [
-            { imageName: IMAGE_NAMES.TREE, weight: 30 },
-            { imageName: IMAGE_NAMES.TREE_CLUSTER, weight: 25 },
-            { imageName: IMAGE_NAMES.ROCK1, weight: 20 },
-            { imageName: IMAGE_NAMES.ROCK2, weight: 15 },
-            { imageName: IMAGE_NAMES.JUMP_RAMP, weight: 10 },
+            { imageName: IMAGE_NAMES.TREE, weight: 18 },
+            { imageName: IMAGE_NAMES.TREE_CLUSTER, weight: 14 },
+            { imageName: IMAGE_NAMES.ROCK1, weight: 28 },
+            { imageName: IMAGE_NAMES.ROCK2, weight: 22 },
+            { imageName: IMAGE_NAMES.JUMP_RAMP, weight: 18 },
         ],
     },
     {
         name: "Rock Garden",
-        obstacleSpawnChance: 6,
+        obstacleSpawnChance: 9,
         obstacleTypes: [
-            { imageName: IMAGE_NAMES.TREE, weight: 15 },
-            { imageName: IMAGE_NAMES.TREE_CLUSTER, weight: 10 },
-            { imageName: IMAGE_NAMES.ROCK1, weight: 30 },
-            { imageName: IMAGE_NAMES.ROCK2, weight: 30 },
-            { imageName: IMAGE_NAMES.JUMP_RAMP, weight: 15 },
+            { imageName: IMAGE_NAMES.TREE, weight: 18 },
+            { imageName: IMAGE_NAMES.TREE_CLUSTER, weight: 14 },
+            { imageName: IMAGE_NAMES.ROCK1, weight: 28 },
+            { imageName: IMAGE_NAMES.ROCK2, weight: 26 },
+            { imageName: IMAGE_NAMES.JUMP_RAMP, weight: 14 },
         ],
     },
     {
         name: "Ramp Rush",
-        obstacleSpawnChance: 5,
+        obstacleSpawnChance: 7,
         obstacleTypes: [
-            { imageName: IMAGE_NAMES.TREE, weight: 20 },
-            { imageName: IMAGE_NAMES.TREE_CLUSTER, weight: 20 },
-            { imageName: IMAGE_NAMES.ROCK1, weight: 15 },
-            { imageName: IMAGE_NAMES.ROCK2, weight: 15 },
-            { imageName: IMAGE_NAMES.JUMP_RAMP, weight: 30 },
+            { imageName: IMAGE_NAMES.TREE, weight: 24 },
+            { imageName: IMAGE_NAMES.TREE_CLUSTER, weight: 24 },
+            { imageName: IMAGE_NAMES.ROCK1, weight: 18 },
+            { imageName: IMAGE_NAMES.ROCK2, weight: 16 },
+            { imageName: IMAGE_NAMES.JUMP_RAMP, weight: 18 },
         ],
     },
 ];
 
 export function getBiomeForScore(score: number): iBiome {
-    if (score > 10000) {
+    if (score > 45000) {
         return BIOMES[2];
     }
 
-    if (score > 4000) {
+    if (score > 15000) {
         return BIOMES[1];
     }
 

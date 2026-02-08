@@ -63,7 +63,7 @@ export class Game {
 
   private boostEndsAt: number = 0;
 
-  private zoomLevel: number = 1.4;
+  private zoomLevel: number = 1.2;
 
   /**
    * The skier player
@@ -278,8 +278,9 @@ export class Game {
           this.skier.jump();
           break;
         case KEYS.P:
-        case KEYS.ESC:
-          this.paused ? this.resume() : this.pause();
+          if (!keyEvent.repeat) {
+            this.paused ? this.resume() : this.pause();
+          }
           break;
         default:
           break;
@@ -387,10 +388,10 @@ export class Game {
         this.score += Math.floor(1 * comboMultiplier);
         break;
       case STATES.STATE_JUMPING:
-        this.score += Math.floor(10 * comboMultiplier);
+        this.score += Math.floor(3 * comboMultiplier);
         break;
       case STATES.STATE_FLIPPING:
-        this.score += Math.floor(100 * comboMultiplier);
+        this.score += Math.floor(20 * comboMultiplier);
         break;
       default:
         break;
