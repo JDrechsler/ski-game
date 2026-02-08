@@ -140,18 +140,29 @@ This branch now includes four experimental systems that can be tested before pro
 4. **Event moments**
    - Temporary events trigger during runs (e.g., Rhino Frenzy, Dense Forest).
 
-## Preview deployment (without overriding your current page)
+## Preview deployment (Netlify deploy previews)
 
-This project now assumes features 1-4 are always enabled.
+Netlify is now the recommended preview platform for this repo.
 
-I added a Pages workflow (`.github/workflows/pages-preview.yml`) that builds from `docs-fun` using `npm run build:preview`.
+### Why Netlify here
 
-GitHub Pages only supports one published site per repository, so to avoid overriding your existing URL:
+- It creates a unique **Deploy Preview URL** for each pull request / merge request automatically.
+- It does not overwrite your existing GitHub Pages production URL.
+- It gives a stable production URL plus per-branch/per-PR preview URLs.
 
-1. Create a second repo for previews (for example `ski-game-preview` or `ski-game-fun-lab`).
-2. Push this branch there and enable Pages from GitHub Actions.
-3. Use that second repo URL as your always-updated preview URL.
+### Repo config
 
-If you want a unique preview URL for every PR/branch automatically, Netlify or Cloudflare Pages is better than GitHub Pages because they provide branch/deploy preview links out of the box.
+This repository now includes `netlify.toml` configured to:
 
-> Note: this local environment has no Git remote configured, so deployment cannot be executed from here directly until a remote repository is connected.
+- run `npm run build`
+- publish from `docs/`
+- use SPA redirect fallback to `index.html`
+
+### Expected workflow
+
+1. Push your branch and open/update an MR/PR.
+2. Netlify bot should post a **Deploy Preview** link on the MR/PR.
+3. Use that URL for testing before merge.
+
+If you want, next I can also remove the GitHub Pages workflow to avoid deployment confusion and keep Netlify as the single preview path.
+
