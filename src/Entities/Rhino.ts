@@ -54,6 +54,8 @@ export class Rhino extends Entity {
 
     speedMultiplier: number = 1;
 
+    movementScale: number = 1;
+
     speedMultiplierExpiresAt: number = 0;
 
     /**
@@ -142,8 +144,8 @@ export class Rhino extends Entity {
         const targetPosition = target.getPosition();
         const moveDirection = getDirectionVector(this.position.x, this.position.y, targetPosition.x, targetPosition.y);
 
-        this.position.x += moveDirection.x * this.speed * this.speedMultiplier;
-        this.position.y += moveDirection.y * this.speed * this.speedMultiplier;
+        this.position.x += moveDirection.x * this.speed * this.speedMultiplier * this.movementScale;
+        this.position.y += moveDirection.y * this.speed * this.speedMultiplier * this.movementScale;
     }
 
     setSpeedMultiplier(multiplier: number, durationMs: number = 0) {
@@ -151,6 +153,10 @@ export class Rhino extends Entity {
         if (durationMs > 0) {
             this.speedMultiplierExpiresAt = Date.now() + durationMs;
         }
+    }
+
+    setMovementScale(scale: number) {
+        this.movementScale = scale;
     }
 
     /**

@@ -22,6 +22,12 @@ import { PowerupManager } from "../Entities/Powerups/PowerupManager";
 import { POWERUP_TYPES } from "../Entities/Powerups/Powerup";
 
 export class Game {
+  private static readonly MIN_ZOOM = 1;
+
+  private static readonly MAX_ZOOM = 1.8;
+
+  private static readonly ZOOM_STEP = 0.2;
+
   /**
    * The canvas the game will be displayed on
    */
@@ -57,6 +63,8 @@ export class Game {
 
   private boostEndsAt: number = 0;
 
+  private zoomLevel: number = 1.4;
+
   /**
    * The skier player
    */
@@ -73,6 +81,7 @@ export class Game {
   constructor() {
     this.init();
     this.setupInputHandling();
+    this.setupZoomControls();
     this.paused = false;
     this.score = 0;
   }
@@ -101,6 +110,42 @@ export class Game {
     this.activeBiome = getBiomeForScore(0);
     this.obstacleManager.setBiome(this.activeBiome);
     this.nextEventAt = Date.now() + 12000;
+    this.applyZoomSettings();
+  }
+
+  setupZoomControls() {
+    const zoomInButton = document.getElementById("zoomIn");
+    const zoomOutButton = document.getElementById("zoomOut");
+
+    zoomInButton?.addEventListener("click", () => {
+      this.adjustZoom(Game.ZOOM_STEP);
+    });
+
+    zoomOutButton?.addEventListener("click", () => {
+      this.adjustZoom(-Game.ZOOM_STEP);
+    });
+  }
+
+  adjustZoom(delta: number) {
+    const newZoom = Math.max(
+      Game.MIN_ZOOM,
+      Math.min(Game.MAX_ZOOM, this.zoomLevel + delta)
+    );
+
+    if (newZoom === this.zoomLevel) {
+      return;
+    }
+
+    this.zoomLevel = newZoom;
+    this.applyZoomSettings();
+  }
+
+  applyZoomSettings() {
+    this.canvas.setZoom(this.zoomLevel);
+
+    const movementScale = 1 / this.zoomLevel;
+    this.skier.setMovementScale(movementScale);
+    this.rhino.setMovementScale(movementScale);
   }
 
   /**
@@ -297,6 +342,7 @@ export class Game {
     ctx.fillStyle = "black";
     ctx.textAlign = "left";
     ctx.fillText(`Score: ${this.score}`, 10, 30);
+    ctx.fillText(`Zoom: ${this.zoomLevel.toFixed(1)}x`, 10, 155);
 
     ctx.fillText(`Combo x${this.skier.getComboMultiplier()}`, 10, 55);
     if (this.skier.getComboRemainingMs() > 0) {

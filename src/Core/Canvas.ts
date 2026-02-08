@@ -22,6 +22,8 @@ export class Canvas {
 
     drawOffset: Position = new Position(0, 0);
 
+    zoom: number = 1;
+
     /**
      * Create a canvas of a specific size
      */
@@ -90,6 +92,19 @@ export class Canvas {
         x -= this.drawOffset.x;
         y -= this.drawOffset.y;
 
+        if (this.zoom !== 1) {
+            const centeredOffsetX = (this.width * (1 - this.zoom)) / 2;
+            const centeredOffsetY = (this.height * (1 - this.zoom)) / 2;
+            x = x * this.zoom + centeredOffsetX;
+            y = y * this.zoom + centeredOffsetY;
+            width *= this.zoom;
+            height *= this.zoom;
+        }
+
         this.ctx.drawImage(image, x, y, width, height);
+    }
+
+    setZoom(zoom: number) {
+        this.zoom = zoom;
     }
 }

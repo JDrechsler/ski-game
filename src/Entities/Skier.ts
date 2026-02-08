@@ -116,6 +116,8 @@ export class Skier extends Entity {
    */
   speed: number = STARTING_SPEED;
 
+  movementScale: number = 1;
+
   comboMultiplier: number = 1;
 
   comboExpiresAt: number = 0;
@@ -302,7 +304,7 @@ export class Skier extends Entity {
    * the starting speed.
    */
   moveSkierLeft() {
-    this.position.x -= STARTING_SPEED;
+    this.position.x -= STARTING_SPEED * this.movementScale;
   }
 
   /**
@@ -310,15 +312,15 @@ export class Skier extends Entity {
    * of a right triangle hypotenuse to ensure consistent traveling speed at an angle.
    */
   moveSkierLeftDown() {
-    this.position.x -= this.speed / DIAGONAL_SPEED_REDUCER;
-    this.position.y += this.speed / DIAGONAL_SPEED_REDUCER;
+    this.position.x -= (this.speed * this.movementScale) / DIAGONAL_SPEED_REDUCER;
+    this.position.y += (this.speed * this.movementScale) / DIAGONAL_SPEED_REDUCER;
   }
 
   /**
    * Move the skier down at the speed they're traveling.
    */
   moveSkierDown() {
-    this.position.y += this.speed;
+    this.position.y += this.speed * this.movementScale;
   }
 
   /**
@@ -326,8 +328,8 @@ export class Skier extends Entity {
    * of a right triangle hypotenuse to ensure consistent traveling speed at an angle.
    */
   moveSkierRightDown() {
-    this.position.x += this.speed / DIAGONAL_SPEED_REDUCER;
-    this.position.y += this.speed / DIAGONAL_SPEED_REDUCER;
+    this.position.x += (this.speed * this.movementScale) / DIAGONAL_SPEED_REDUCER;
+    this.position.y += (this.speed * this.movementScale) / DIAGONAL_SPEED_REDUCER;
   }
 
   /**
@@ -335,7 +337,7 @@ export class Skier extends Entity {
    * the starting speed.
    */
   moveSkierRight() {
-    this.position.x += STARTING_SPEED;
+    this.position.x += STARTING_SPEED * this.movementScale;
   }
 
   /**
@@ -343,7 +345,7 @@ export class Skier extends Entity {
    * the starting speed.
    */
   moveSkierUp() {
-    this.position.y -= STARTING_SPEED;
+    this.position.y -= STARTING_SPEED * this.movementScale;
   }
 
   /**
@@ -624,5 +626,9 @@ export class Skier extends Entity {
     }
 
     return Math.max(0, this.comboExpiresAt - Date.now());
+  }
+
+  setMovementScale(scale: number) {
+    this.movementScale = scale;
   }
 }
