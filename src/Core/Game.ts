@@ -60,6 +60,11 @@ export class Game {
     constructor() {
         this.highScore = this.loadHighScore();
         this.isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+        // Create persistent objects that survive restarts
+        this.canvas = new Canvas(GAME_CANVAS, GAME_WIDTH, GAME_HEIGHT);
+        this.imageManager = new ImageManager();
+
         this.initGame();
         this.setupInputHandling();
         this.setupMenuHandlers();
@@ -68,10 +73,9 @@ export class Game {
 
     /**
      * Create all game objects and set initial biome.
+     * Reuses the existing canvas and imageManager so loaded images persist across restarts.
      */
     private initGame() {
-        this.canvas = new Canvas(GAME_CANVAS, GAME_WIDTH, GAME_HEIGHT);
-        this.imageManager = new ImageManager();
         this.obstacleManager = new ObstacleManager(this.imageManager, this.canvas);
         this.collectibleManager = new CollectibleManager(this.imageManager, this.canvas);
 
@@ -98,8 +102,6 @@ export class Game {
      * Reset game state for a restart.
      */
     private restart() {
-        this.obstacleManager.reset();
-        this.collectibleManager.reset();
         this.initGame();
         this.gameState = GAME_STATES.PLAYING;
         this.hideAllMenus();

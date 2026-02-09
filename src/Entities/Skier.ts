@@ -22,7 +22,7 @@ import { Animation } from "../Core/Animation";
 /**
  * The skier starts running at this speed. Saved in case speed needs to be reset at any point.
  */
-const STARTING_SPEED: number = 4;
+const STARTING_SPEED: number = 2.5;
 
 /**
  * The skier jumps for this amount of time in ms before returning to skiing.
