@@ -163,14 +163,14 @@ export class Skier extends Entity {
     this.animations[STATES.STATE_FLIPPING] = new Animation(
       IMAGES_FLIP,
       false,
-      () => this.ski(this.direction, this.speed)
+      () => this.ski(this.direction, Math.max(this.speed, STARTING_SPEED))
     );
     this.animations[STATES.STATE_JUMPING] = new Animation(
       IMAGES_JUMP,
       false,
       () => {
         setTimeout(() => {
-          this.ski(this.direction, this.speed);
+          this.ski(this.direction, Math.max(this.speed, STARTING_SPEED));
         }, JUMPING_TIME);
       }
     );
@@ -400,7 +400,7 @@ export class Skier extends Entity {
    * to escape an obstacle before skiing down again. If they're already jumping, don't let them jump again.
    */
   jump() {
-    if (this.isCrashed() && this.isJumping()) {
+    if (this.isCrashed() || this.isJumping()) {
       return;
     }
     this.setState(STATES.STATE_JUMPING);

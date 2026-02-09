@@ -366,7 +366,7 @@ export class Game {
 
         if (keyState === KEY_STATES.RELEASE) {
             if (this.gameState !== GAME_STATES.PLAYING) return;
-            if (this.skier.isDead() || this.skier.isInAir()) return;
+            if (this.skier.isDead()) return;
 
             switch (keyEvent.key) {
                 case KEYS.LEFT:
@@ -385,7 +385,7 @@ export class Game {
      * Pause the game and show pause menu.
      */
     pause() {
-        if (this.skier.state === STATES.STATE_SKIING || this.skier.state === STATES.STATE_CRASHED) {
+        if (!this.skier.isDead()) {
             this.gameState = GAME_STATES.PAUSED;
             this.showMenu(GAME_STATES.PAUSED);
             if (this.isMobile) this.showMobileControls(false);
