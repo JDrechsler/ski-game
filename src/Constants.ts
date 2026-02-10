@@ -126,7 +126,7 @@ export interface BiomeConfig {
 
 export const BIOMES: BiomeConfig[] = [
     {
-        name: "Meadow",
+        name: "Summit",
         backgroundColor: "#f0f8ff",
         scoreThreshold: 0,
         obstacleChance: 20,

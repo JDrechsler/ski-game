@@ -266,6 +266,21 @@ export class Game {
         const previousGameWindow: Rect = this.gameWindow;
         this.calculateGameWindow();
 
+        // Continuous difficulty ramp: start very sparse (mountaintop) and gradually fill in
+        const BASE_OBSTACLE_EASE = 60; // 1-in-60 chance at score 0 (very sparse)
+        const OBSTACLE_RAMP_RATE = 0.006; // how fast density increases per score point
+        const BASE_COLLECTIBLE_EASE = 30; // collectibles start a bit more common so player sees coins early
+        const COLLECTIBLE_RAMP_RATE = 0.003;
+
+        this.obstacleManager.obstacleChance = Math.max(
+            this.currentBiome.obstacleChance,
+            Math.round(BASE_OBSTACLE_EASE - this.score * OBSTACLE_RAMP_RATE)
+        );
+        this.collectibleManager.collectibleChance = Math.max(
+            this.currentBiome.collectibleChance,
+            Math.round(BASE_COLLECTIBLE_EASE - this.score * COLLECTIBLE_RAMP_RATE)
+        );
+
         this.obstacleManager.placeNewObstacle(this.gameWindow, previousGameWindow);
         this.collectibleManager.placeNewCollectible(this.gameWindow, previousGameWindow, this.currentBiome);
 

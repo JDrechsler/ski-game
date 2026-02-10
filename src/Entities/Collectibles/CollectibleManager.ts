@@ -10,7 +10,7 @@ import { Position, randomInt, Rect, intersectTwoRects } from "../../Core/Utils";
 import { Collectible } from "./Collectible";
 
 const DISTANCE_BETWEEN_COLLECTIBLES: number = 80;
-const STARTING_COLLECTIBLE_GAP: number = 150;
+const STARTING_COLLECTIBLE_GAP: number = 250;
 
 export class CollectibleManager {
     collectibles: Collectible[] = [];
@@ -38,7 +38,7 @@ export class CollectibleManager {
     }
 
     placeInitialCollectibles(biome: BiomeConfig) {
-        const numCollectibles = Math.ceil((GAME_WIDTH / 400) * (GAME_HEIGHT / 400));
+        const numCollectibles = Math.min(3, Math.ceil((GAME_WIDTH / 600) * (GAME_HEIGHT / 600)));
         const placementArea = new Rect(-GAME_WIDTH / 2, STARTING_COLLECTIBLE_GAP, GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
         for (let i = 0; i < numCollectibles; i++) {

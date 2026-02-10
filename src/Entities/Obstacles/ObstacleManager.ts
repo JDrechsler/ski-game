@@ -11,8 +11,8 @@ import { Position, randomInt, Rect } from "../../Core/Utils";
 import { Obstacle } from "./Obstacle";
 
 const DISTANCE_BETWEEN_OBSTACLES: number = 50;
-const STARTING_OBSTACLE_GAP: number = 100;
-const STARTING_OBSTACLE_REDUCER: number = 300;
+const STARTING_OBSTACLE_GAP: number = 300;
+const STARTING_OBSTACLE_REDUCER: number = 1000;
 
 export class ObstacleManager {
     obstacles: Obstacle[] = [];
