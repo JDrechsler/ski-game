@@ -207,12 +207,12 @@ export class Game {
         });
         document.getElementById("optionsBackBtn")!.addEventListener("click", () => this.hideOptionsMenu());
 
-        // Build timestamp
-        const timestampEl = document.getElementById("buildTimestamp");
-        if (timestampEl) {
-            const date = new Date(__BUILD_TIMESTAMP__);
-            timestampEl.textContent = `Last updated: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-        }
+        // Build timestamp — populate all instances across menus
+        const date = new Date(__BUILD_TIMESTAMP__);
+        const timestampText = `Last updated: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+        document.querySelectorAll(".build-timestamp-display").forEach((el) => {
+            el.textContent = timestampText;
+        });
 
         // Zoom slider
         const zoomSlider = document.getElementById("zoomSlider") as HTMLInputElement;
