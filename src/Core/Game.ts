@@ -401,21 +401,31 @@ export class Game {
    * Draw the current game score to the screen.
    */
   drawScore(ctx: CanvasRenderingContext2D = this.canvas.ctx) {
-    ctx.font = "20px Arial";
-    ctx.fillStyle = "black";
-    ctx.textAlign = "left";
-    ctx.fillText(`Score: ${this.score}`, 10, 30);
-    ctx.fillText(`Zoom: ${this.zoomLevel.toFixed(1)}x`, 10, 155);
+    ctx.fillStyle = "rgba(11, 47, 77, 0.68)";
+    ctx.fillRect(10, 10, 270, 180);
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(10, 10, 270, 180);
 
-    ctx.fillText(`Combo x${this.skier.getComboMultiplier()}`, 10, 55);
+    ctx.font = "700 20px Inter, Arial";
+    ctx.fillStyle = "#f0fbff";
+    ctx.textAlign = "left";
+    ctx.fillText(`Score: ${this.score}`, 20, 38);
+    ctx.fillText(`Zoom: ${this.zoomLevel.toFixed(1)}x`, 20, 170);
+
+    ctx.fillText(`Combo x${this.skier.getComboMultiplier()}`, 20, 66);
     if (this.skier.getComboRemainingMs() > 0) {
-      ctx.fillText(`Combo timer: ${(this.skier.getComboRemainingMs() / 1000).toFixed(1)}s`, 10, 80);
+      ctx.fillText(
+        `Combo timer: ${(this.skier.getComboRemainingMs() / 1000).toFixed(1)}s`,
+        20,
+        94
+      );
     }
 
-    ctx.fillText(`Biome: ${this.activeBiome.name}`, 10, 105);
+    ctx.fillText(`Biome: ${this.activeBiome.name}`, 20, 122);
 
     if (this.activeEventName) {
-      ctx.fillText(`Event: ${this.activeEventName}`, 10, 130);
+      ctx.fillText(`Event: ${this.activeEventName}`, 20, 146);
     }
   }
 

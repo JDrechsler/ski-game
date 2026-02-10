@@ -75,6 +75,23 @@ export class Canvas {
      */
     clearCanvas() {
         this.ctx.clearRect(0, 0, this.width, this.height);
+
+        const skyGradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
+        skyGradient.addColorStop(0, "#eef8ff");
+        skyGradient.addColorStop(0.5, "#dff2ff");
+        skyGradient.addColorStop(1, "#cde9ff");
+        this.ctx.fillStyle = skyGradient;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        this.ctx.fillStyle = "rgba(255,255,255,0.45)";
+        for (let i = 0; i < 45; i++) {
+            const x = (i * 177) % this.width;
+            const y = (i * 293) % this.height;
+            const r = (i % 3) + 1;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, r, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
     }
 
     /**

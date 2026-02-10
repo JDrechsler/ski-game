@@ -148,6 +148,13 @@ This branch now includes four experimental systems that can be tested before pro
 - Difficulty ramps up later and more gradually (higher biome score thresholds).
 - Default zoom is slightly smaller to show more of the slope while keeping zoom controls available.
 
+
+### Visual refresh
+
+- Added a 2026-style frosted UI treatment for controls and pause menu.
+- Added a branded top pill and refreshed HUD panel styling for score/biome/event text.
+- Added a subtle gradient snow background with soft snow particles to make the slope feel more alive.
+
 ## Deployment strategy
 
 ### 1) Netlify for MR/PR preview URLs
