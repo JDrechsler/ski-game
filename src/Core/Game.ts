@@ -65,6 +65,10 @@ export class Game {
 
   private zoomLevel: number = 1.2;
 
+  private mainVolume: number = 1;
+
+  private lastUpdatedText: string = "";
+
   /**
    * The skier player
    */
@@ -82,6 +86,7 @@ export class Game {
     this.init();
     this.setupInputHandling();
     this.setupZoomControls();
+    this.setupMenuControls();
     this.paused = false;
     this.score = 0;
   }
@@ -110,7 +115,62 @@ export class Game {
     this.activeBiome = getBiomeForScore(0);
     this.obstacleManager.setBiome(this.activeBiome);
     this.nextEventAt = Date.now() + 12000;
+    this.lastUpdatedText = this.getLastUpdatedText();
     this.applyZoomSettings();
+    this.updatePauseMenuUI();
+  }
+
+  setupMenuControls() {
+    const menuButton = document.getElementById("menuButton");
+    const resumeButton = document.getElementById("resumeButton");
+    const volumeInput = document.getElementById("mainVolume");
+
+    menuButton?.addEventListener("click", () => {
+      this.paused ? this.resume() : this.pause();
+    });
+
+    resumeButton?.addEventListener("click", () => {
+      this.resume();
+    });
+
+    if (volumeInput instanceof HTMLInputElement) {
+      volumeInput.addEventListener("input", () => {
+        this.mainVolume = Number(volumeInput.value) / 100;
+        this.updatePauseMenuUI();
+      });
+    }
+  }
+
+  getLastUpdatedText(): string {
+    const parsedDate = new Date(document.lastModified);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "Last updated: unavailable";
+    }
+
+    return `Last updated: ${parsedDate.toLocaleString()}`;
+  }
+
+  updatePauseMenuUI() {
+    const pauseMenu = document.getElementById("pauseMenu");
+    const pauseStatusText = document.getElementById("pauseStatusText");
+    const volumeValue = document.getElementById("mainVolumeValue");
+    const lastUpdated = document.getElementById("lastUpdatedText");
+
+    if (pauseMenu) {
+      pauseMenu.classList.toggle("visible", this.paused);
+    }
+
+    if (pauseStatusText) {
+      pauseStatusText.textContent = this.paused ? "Paused" : "Running";
+    }
+
+    if (volumeValue) {
+      volumeValue.textContent = `${Math.round(this.mainVolume * 100)}%`;
+    }
+
+    if (lastUpdated) {
+      lastUpdated.textContent = this.lastUpdatedText;
+    }
   }
 
   setupZoomControls() {
@@ -309,6 +369,7 @@ export class Game {
   pause() {
     if (this.skier.state === STATES.STATE_SKIING) {
       this.paused = true;
+      this.updatePauseMenuUI();
     }
   }
 
@@ -317,6 +378,7 @@ export class Game {
    */
   resume() {
     this.paused = false;
+    this.updatePauseMenuUI();
   }
 
   /**

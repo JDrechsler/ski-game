@@ -124,6 +124,7 @@ Available Hotkeys:
 -   Arrow keys: Used to navigate within the game world
 -   Jump: Let the skier jump. The skier can jump over rocks but not trees
 -   P: Pause / resume the game
+-   Menu button (☰): Opens a styled pause menu with main volume control and last-updated timestamp
 -   + / − buttons (bottom-right on mobile): Zoom in/out for readability; movement speed is automatically compensated while zoomed
 
 ## Experimental fun mode (features 1-4)

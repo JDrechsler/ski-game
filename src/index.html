@@ -7,6 +7,21 @@
     </head>
     <body>
         <canvas id="skiCanvas"></canvas>
+        <button id="menuButton" class="menu-button" type="button" aria-label="Open game menu">☰</button>
+
+        <aside id="pauseMenu" class="pause-menu" aria-live="polite">
+            <h2>Game Menu</h2>
+            <p id="pauseStatusText">Running</p>
+
+            <label for="mainVolume">Main volume</label>
+            <input id="mainVolume" type="range" min="0" max="100" value="100" />
+            <p id="mainVolumeValue">100%</p>
+
+            <p id="lastUpdatedText"></p>
+
+            <button id="resumeButton" type="button">Resume</button>
+        </aside>
+
         <div class="zoom-controls" aria-label="Zoom controls">
             <button id="zoomOut" type="button">−</button>
             <button id="zoomIn" type="button">+</button>
