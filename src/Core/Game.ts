@@ -293,6 +293,10 @@ export class Game {
         this.obstacleManager.placeNewObstacle(this.gameWindow, previousGameWindow);
         this.collectibleManager.placeNewCollectible(this.gameWindow, previousGameWindow, this.currentBiome);
 
+        // Cull off-screen entities to prevent unbounded growth
+        this.obstacleManager.cullOffScreen(this.gameWindow);
+        this.collectibleManager.cullOffScreen(this.gameWindow);
+
         this.skier.update(this.gameTime);
 
         // Spawn rhino after score threshold

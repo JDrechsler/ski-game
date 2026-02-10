@@ -132,6 +132,21 @@ export class CollectibleManager {
         });
     }
 
+    /**
+     * Remove collectibles that are far behind the game window to prevent unbounded array growth.
+     */
+    cullOffScreen(gameWindow: Rect) {
+        const margin = (gameWindow.bottom - gameWindow.top) * 2;
+        this.collectibles = this.collectibles.filter((collectible) => {
+            const pos = collectible.getPosition();
+            return (
+                pos.y > gameWindow.top - margin &&
+                pos.x > gameWindow.left - margin &&
+                pos.x < gameWindow.right + margin
+            );
+        });
+    }
+
     reset() {
         this.collectibles = [];
     }

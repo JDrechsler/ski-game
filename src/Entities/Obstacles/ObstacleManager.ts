@@ -39,6 +39,21 @@ export class ObstacleManager {
         });
     }
 
+    /**
+     * Remove obstacles that are far behind the game window to prevent unbounded array growth.
+     */
+    cullOffScreen(gameWindow: Rect) {
+        const margin = (gameWindow.bottom - gameWindow.top) * 2;
+        this.obstacles = this.obstacles.filter((obstacle: Obstacle) => {
+            const pos = obstacle.getPosition();
+            return (
+                pos.y > gameWindow.top - margin &&
+                pos.x > gameWindow.left - margin &&
+                pos.x < gameWindow.right + margin
+            );
+        });
+    }
+
     placeInitialObstacles() {
         const numberObstacles = Math.ceil(
             (GAME_WIDTH / STARTING_OBSTACLE_REDUCER) * (GAME_HEIGHT / STARTING_OBSTACLE_REDUCER)
@@ -95,10 +110,13 @@ export class ObstacleManager {
     }
 
     placeRandomObstacle(placementArea: Rect) {
-        let position: Position | null;
-        do {
+        let position: Position | null = null;
+        for (let attempts = 0; attempts < 5; attempts++) {
             position = this.calculateOpenPosition(placementArea);
-        } while (!position);
+            if (position) break;
+        }
+
+        if (!position) return;
 
         const newObstacle = new Obstacle(position.x, position.y, this.imageManager, this.canvas);
         this.obstacles.push(newObstacle);
