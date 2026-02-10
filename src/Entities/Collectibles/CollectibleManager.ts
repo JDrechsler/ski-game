@@ -104,10 +104,11 @@ export class CollectibleManager {
         return tooClose ? null : new Position(x, y);
     }
 
-    checkCollection(skierBounds: Rect | null): number {
-        if (!skierBounds) return 0;
+    checkCollection(skierBounds: Rect | null): { points: number; collected: { x: number; y: number; color: string }[] } {
+        if (!skierBounds) return { points: 0, collected: [] };
 
         let points = 0;
+        const collected: { x: number; y: number; color: string }[] = [];
 
         this.collectibles.forEach((collectible) => {
             if (collectible.isCollected()) return;
@@ -118,12 +119,14 @@ export class CollectibleManager {
             if (intersectTwoRects(skierBounds, bounds)) {
                 collectible.collect();
                 points += collectible.getPoints();
+                const pos = collectible.getPosition();
+                collected.push({ x: pos.x, y: pos.y, color: collectible.config.color });
             }
         });
 
         this.collectibles = this.collectibles.filter((c) => !c.isCollected());
 
-        return points;
+        return { points, collected };
     }
 
     drawCollectibles() {

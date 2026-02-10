@@ -110,6 +110,12 @@ export const DIAGONAL_SPEED_REDUCER: number = 1.4142;
 export interface BiomeConfig {
     name: string;
     backgroundColor: string;
+    gradientTop: string;
+    gradientBottom: string;
+    snowColor: string;
+    snowOpacity: number;
+    vignetteIntensity: number;
+    trailColor: string;
     scoreThreshold: number;
     obstacleChance: number;
     collectibleChance: number;
@@ -128,6 +134,12 @@ export const BIOMES: BiomeConfig[] = [
     {
         name: "Summit",
         backgroundColor: "#f0f8ff",
+        gradientTop: "#e8f4ff",
+        gradientBottom: "#c8dff5",
+        snowColor: "#ffffff",
+        snowOpacity: 0.7,
+        vignetteIntensity: 0.15,
+        trailColor: "rgba(140, 170, 210, 0.35)",
         scoreThreshold: 0,
         obstacleChance: 20,
         collectibleChance: 8,
@@ -144,6 +156,12 @@ export const BIOMES: BiomeConfig[] = [
     {
         name: "Forest",
         backgroundColor: "#e8f5e9",
+        gradientTop: "#d4edda",
+        gradientBottom: "#a8d5b8",
+        snowColor: "#e8ffe8",
+        snowOpacity: 0.5,
+        vignetteIntensity: 0.25,
+        trailColor: "rgba(120, 160, 120, 0.3)",
         scoreThreshold: 3000,
         obstacleChance: 12,
         collectibleChance: 9,
@@ -160,6 +178,12 @@ export const BIOMES: BiomeConfig[] = [
     {
         name: "Ice Cave",
         backgroundColor: "#e1f5fe",
+        gradientTop: "#d0ecf9",
+        gradientBottom: "#9ac8e8",
+        snowColor: "#d4eaff",
+        snowOpacity: 0.9,
+        vignetteIntensity: 0.3,
+        trailColor: "rgba(100, 180, 220, 0.35)",
         scoreThreshold: 8000,
         obstacleChance: 8,
         collectibleChance: 10,
@@ -176,6 +200,12 @@ export const BIOMES: BiomeConfig[] = [
     {
         name: "Night",
         backgroundColor: "#1a1a2e",
+        gradientTop: "#1a1a2e",
+        gradientBottom: "#0d0d1a",
+        snowColor: "#4466aa",
+        snowOpacity: 0.3,
+        vignetteIntensity: 0.45,
+        trailColor: "rgba(80, 100, 160, 0.25)",
         scoreThreshold: 15000,
         obstacleChance: 6,
         collectibleChance: 11,

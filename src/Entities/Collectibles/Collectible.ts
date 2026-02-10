@@ -45,21 +45,32 @@ export class Collectible extends Entity {
         const size = this.config.size * this.canvas.zoom;
         const ctx = this.canvas.ctx;
 
+        // Shadow
+        ctx.save();
+        ctx.globalAlpha = 0.1;
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.ellipse(screen.x, screen.y + 4 * this.canvas.zoom, size * 1.2, size * 0.35, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
         this.animationTime += 0.05;
         const pulse = 1 + Math.sin(this.animationTime * 3) * 0.15;
         const drawSize = size * pulse;
+        const bob = Math.sin(this.animationTime * 2) * 2 * this.canvas.zoom;
+        const bobScreen = { x: screen.x, y: screen.y + bob } as Position;
 
         ctx.save();
 
         switch (this.config.type) {
             case COLLECTIBLE_TYPE.COIN:
-                this.drawCoin(ctx, screen, drawSize);
+                this.drawCoin(ctx, bobScreen, drawSize);
                 break;
             case COLLECTIBLE_TYPE.STAR:
-                this.drawStar(ctx, screen, drawSize);
+                this.drawStar(ctx, bobScreen, drawSize);
                 break;
             case COLLECTIBLE_TYPE.GEM:
-                this.drawGem(ctx, screen, drawSize);
+                this.drawGem(ctx, bobScreen, drawSize);
                 break;
         }
 

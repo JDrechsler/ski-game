@@ -70,6 +70,26 @@ export class Canvas {
         this.ctx.fillRect(0, 0, this.width, this.height);
     }
 
+    fillGradientBackground(topColor: string, bottomColor: string) {
+        const gradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
+        gradient.addColorStop(0, topColor);
+        gradient.addColorStop(1, bottomColor);
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+    }
+
+    drawVignette(intensity: number = 0.3) {
+        const cx = this.width / 2;
+        const cy = this.height / 2;
+        const innerR = Math.max(this.width, this.height) * 0.35;
+        const outerR = Math.max(this.width, this.height) * 0.75;
+        const gradient = this.ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+        gradient.addColorStop(0, "rgba(0,0,0,0)");
+        gradient.addColorStop(1, `rgba(0,0,0,${intensity})`);
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+    }
+
     setDrawOffset(x: number, y: number) {
         this.drawOffset.x = x;
         this.drawOffset.y = y;

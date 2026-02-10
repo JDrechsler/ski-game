@@ -21,10 +21,12 @@ import { ObstacleManager } from "../Entities/Obstacles/ObstacleManager";
 import { CollectibleManager } from "../Entities/Collectibles/CollectibleManager";
 import { Rhino } from "../Entities/Rhino";
 import { STATES, Skier } from "../Entities/Skier";
+import { ParticleSystem } from "../Effects/ParticleSystem";
 
 declare const __BUILD_TIMESTAMP__: string;
 
 const HIGH_SCORE_KEY = "skiGame_highScore";
+const MAX_TRAIL_LENGTH = 40;
 
 export class Game {
     private canvas!: Canvas;
@@ -35,6 +37,7 @@ export class Game {
     private collectibleManager!: CollectibleManager;
     private skier!: Skier;
     private rhino!: Rhino;
+    private particles!: ParticleSystem;
 
     private gameState: GAME_STATES = GAME_STATES.MENU;
     private score: number = 0;
@@ -42,6 +45,9 @@ export class Game {
     private highScore: number = 0;
     private currentBiome: BiomeConfig = BIOMES[0];
     private rhinoSpawned: boolean = false;
+
+    // Ski trail
+    private trailPositions: Position[] = [];
 
     // Biome transition notification
     private biomeNotification: string = "";
@@ -66,6 +72,7 @@ export class Game {
         // Create persistent objects that survive restarts
         this.canvas = new Canvas(GAME_CANVAS, GAME_WIDTH, GAME_HEIGHT);
         this.imageManager = new ImageManager();
+        this.particles = new ParticleSystem(GAME_WIDTH, GAME_HEIGHT);
 
         this.initGame();
         this.setupInputHandling();
@@ -90,6 +97,7 @@ export class Game {
         this.currentBiome = BIOMES[0];
         this.biomeNotification = "";
         this.biomeNotificationTimer = 0;
+        this.trailPositions = [];
 
         // Apply initial biome
         this.obstacleManager.setBiome(this.currentBiome);
@@ -253,10 +261,27 @@ export class Game {
 
     run() {
         this.canvas.clearCanvas();
-        this.canvas.fillBackground(this.currentBiome.backgroundColor);
+        this.canvas.fillGradientBackground(this.currentBiome.gradientTop, this.currentBiome.gradientBottom);
+
+        // Always update particles (snow falls even on menus)
+        this.particles.update(
+            this.gameState === GAME_STATES.PLAYING ? this.skier.speed : 0,
+            20
+        );
 
         this.updateGameWindow();
         this.drawGameWindow();
+
+        // Screen-space effects drawn on top
+        this.particles.drawBursts(this.canvas.ctx);
+        this.particles.drawSpeedLines(this.canvas.ctx);
+        this.particles.drawSnow(this.canvas.ctx, this.currentBiome.snowColor, this.currentBiome.snowOpacity);
+        this.canvas.drawVignette(this.currentBiome.vignetteIntensity);
+
+        // HUD last (always on top)
+        if (this.gameState === GAME_STATES.PLAYING || this.gameState === GAME_STATES.PAUSED) {
+            this.drawHUD();
+        }
 
         requestAnimationFrame(this.run.bind(this));
     }
@@ -271,14 +296,15 @@ export class Game {
         this.updateBiome();
         this.updateGameScore();
         this.updateCollectibles();
+        this.updateTrail();
 
         const previousGameWindow: Rect = this.gameWindow;
         this.calculateGameWindow();
 
         // Continuous difficulty ramp: start very sparse (mountaintop) and gradually fill in
-        const BASE_OBSTACLE_EASE = 60; // 1-in-60 chance at score 0 (very sparse)
-        const OBSTACLE_RAMP_RATE = 0.006; // how fast density increases per score point
-        const BASE_COLLECTIBLE_EASE = 30; // collectibles start a bit more common so player sees coins early
+        const BASE_OBSTACLE_EASE = 60;
+        const OBSTACLE_RAMP_RATE = 0.006;
+        const BASE_COLLECTIBLE_EASE = 30;
         const COLLECTIBLE_RAMP_RATE = 0.003;
 
         this.obstacleManager.obstacleChance = Math.max(
@@ -316,8 +342,26 @@ export class Game {
         }
     }
 
+    /**
+     * Track skier positions for the ski trail.
+     */
+    private updateTrail() {
+        if (this.skier.state === STATES.STATE_SKIING) {
+            const pos = this.skier.getPosition();
+            this.trailPositions.push(new Position(pos.x, pos.y));
+            if (this.trailPositions.length > MAX_TRAIL_LENGTH) {
+                this.trailPositions.shift();
+            }
+        } else if (this.skier.state === STATES.STATE_CRASHED) {
+            this.trailPositions = [];
+        }
+    }
+
     drawGameWindow() {
         this.canvas.setDrawOffset(this.gameWindow.left, this.gameWindow.top);
+
+        // Ski trail behind everything
+        this.drawTrail();
 
         this.collectibleManager.drawCollectibles();
         this.obstacleManager.drawObstacles();
@@ -325,8 +369,43 @@ export class Game {
         if (this.rhinoSpawned) {
             this.rhino.draw();
         }
+    }
 
-        this.drawHUD();
+    /**
+     * Draw twin ski tracks behind the skier.
+     */
+    private drawTrail() {
+        if (this.trailPositions.length < 2) return;
+
+        const ctx = this.canvas.ctx;
+        const skiSpacing = 3 * this.canvas.zoom;
+
+        ctx.save();
+        ctx.lineCap = "round";
+
+        for (let i = 1; i < this.trailPositions.length; i++) {
+            const alpha = (i / this.trailPositions.length) * 0.3;
+            const pos = this.canvas.worldToScreen(this.trailPositions[i].x, this.trailPositions[i].y);
+            const prev = this.canvas.worldToScreen(this.trailPositions[i - 1].x, this.trailPositions[i - 1].y);
+
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = this.currentBiome.trailColor;
+            ctx.lineWidth = 1.5 * this.canvas.zoom;
+
+            // Left ski track
+            ctx.beginPath();
+            ctx.moveTo(prev.x - skiSpacing, prev.y);
+            ctx.lineTo(pos.x - skiSpacing, pos.y);
+            ctx.stroke();
+
+            // Right ski track
+            ctx.beginPath();
+            ctx.moveTo(prev.x + skiSpacing, prev.y);
+            ctx.lineTo(pos.x + skiSpacing, pos.y);
+            ctx.stroke();
+        }
+
+        ctx.restore();
     }
 
     /**
@@ -458,45 +537,103 @@ export class Game {
             this.obstacleManager.setBiome(newBiome);
             this.collectibleManager.setBiome(newBiome);
             this.biomeNotification = newBiome.name;
-            this.biomeNotificationTimer = 180; // ~3 seconds at 60fps
+            this.biomeNotificationTimer = 180;
         }
     }
 
     /**
-     * Check if the skier collects any items.
+     * Check if the skier collects any items. Spawn burst particles on collection.
      */
     private updateCollectibles() {
         const skierBounds = this.skier.getBounds();
-        const points = this.collectibleManager.checkCollection(skierBounds);
-        if (points > 0) {
-            this.score += points;
-            this.coinsCollected++;
+        const result = this.collectibleManager.checkCollection(skierBounds);
+        if (result.points > 0) {
+            this.score += result.points;
+            this.coinsCollected += result.collected.length;
+            for (const item of result.collected) {
+                const screen = this.canvas.worldToScreen(item.x, item.y);
+                this.particles.spawnBurst(screen.x, screen.y, item.color, 12);
+            }
         }
     }
 
     /**
-     * Draw the in-game HUD (score, biome, warnings).
+     * Draw the in-game HUD with a polished backdrop panel.
      */
     private drawHUD() {
         const ctx = this.canvas.ctx;
-        const isNightBiome = this.currentBiome.name === "Night";
-        const textColor = isNightBiome ? "#e0e0e0" : "#1a1a2e";
+
+        // HUD backdrop (top-left)
+        ctx.save();
+        const panelW = 170;
+        const panelH = 88;
+        const panelX = 10;
+        const panelY = 10;
+        const r = 12;
+
+        ctx.beginPath();
+        ctx.moveTo(panelX + r, panelY);
+        ctx.lineTo(panelX + panelW - r, panelY);
+        ctx.quadraticCurveTo(panelX + panelW, panelY, panelX + panelW, panelY + r);
+        ctx.lineTo(panelX + panelW, panelY + panelH - r);
+        ctx.quadraticCurveTo(panelX + panelW, panelY + panelH, panelX + panelW - r, panelY + panelH);
+        ctx.lineTo(panelX + r, panelY + panelH);
+        ctx.quadraticCurveTo(panelX, panelY + panelH, panelX, panelY + panelH - r);
+        ctx.lineTo(panelX, panelY + r);
+        ctx.quadraticCurveTo(panelX, panelY, panelX + r, panelY);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+        ctx.fill();
+        ctx.restore();
 
         // Score
-        ctx.font = "bold 20px 'Segoe UI', sans-serif";
-        ctx.fillStyle = textColor;
+        ctx.font = "bold 22px 'Segoe UI', sans-serif";
+        ctx.fillStyle = "#ffffff";
         ctx.textAlign = "left";
-        ctx.fillText(`Score: ${this.score}`, 16, 32);
+        ctx.fillText(`${this.score}`, panelX + 14, panelY + 28);
 
-        // Coins collected
-        ctx.font = "16px 'Segoe UI', sans-serif";
+        // Score label
+        ctx.font = "11px 'Segoe UI', sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.fillText("SCORE", panelX + 14, panelY + 42);
+
+        // Coin icon (small gold circle)
+        const coinX = panelX + 22;
+        const coinY = panelY + 60;
+        ctx.beginPath();
+        ctx.arc(coinX, coinY, 6, 0, Math.PI * 2);
         ctx.fillStyle = "#FFD700";
-        ctx.fillText(`Coins: ${this.coinsCollected}`, 16, 56);
+        ctx.fill();
+        ctx.font = "bold 7px Arial";
+        ctx.fillStyle = "#B8860B";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("$", coinX, coinY);
 
-        // Biome indicator
-        ctx.font = "14px 'Segoe UI', sans-serif";
-        ctx.fillStyle = isNightBiome ? "#aaa" : "#888";
-        ctx.fillText(this.currentBiome.name, 16, 76);
+        // Coins count
+        ctx.font = "bold 16px 'Segoe UI', sans-serif";
+        ctx.fillStyle = "#FFD700";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillText(`${this.coinsCollected}`, coinX + 12, coinY + 5);
+
+        // Biome badge (top-right of panel)
+        const biomeName = this.currentBiome.name;
+        ctx.font = "bold 10px 'Segoe UI', sans-serif";
+        const biomeWidth = ctx.measureText(biomeName).width + 12;
+        const badgeX = panelX + panelW - biomeWidth - 6;
+        const badgeY = panelY + panelH - 18;
+
+        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.beginPath();
+        ctx.roundRect(badgeX, badgeY, biomeWidth, 16, 4);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.textAlign = "center";
+        ctx.fillText(biomeName, badgeX + biomeWidth / 2, badgeY + 12);
+
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
 
         // Biome transition notification
         if (this.biomeNotificationTimer > 0) {
@@ -504,21 +641,42 @@ export class Game {
             const alpha = Math.min(1, this.biomeNotificationTimer / 30);
             ctx.save();
             ctx.globalAlpha = alpha;
-            ctx.font = "bold 32px 'Segoe UI', sans-serif";
-            ctx.fillStyle = isNightBiome ? "#fff" : "#333";
+
+            // Notification backdrop
+            const notifText = `Entering ${this.biomeNotification}`;
+            ctx.font = "bold 28px 'Segoe UI', sans-serif";
+            const notifW = ctx.measureText(notifText).width + 40;
+            const notifX = (this.canvas.width - notifW) / 2;
+            ctx.fillStyle = "rgba(0,0,0,0.4)";
+            ctx.beginPath();
+            ctx.roundRect(notifX, 95, notifW, 44, 10);
+            ctx.fill();
+
+            ctx.fillStyle = "#ffffff";
             ctx.textAlign = "center";
-            ctx.fillText(`Entering ${this.biomeNotification}`, this.canvas.width / 2, 120);
+            ctx.fillText(notifText, this.canvas.width / 2, 125);
             ctx.restore();
         }
 
         // Crash message
         if (this.skier.state === STATES.STATE_CRASHED && this.gameState === GAME_STATES.PLAYING) {
             ctx.save();
-            ctx.globalAlpha = 0.7;
-            ctx.font = "bold 18px 'Segoe UI', sans-serif";
-            ctx.fillStyle = isNightBiome ? "#ff8888" : "#cc3333";
+            const crashText = "Crashed! Use arrow keys to recover";
+            ctx.font = "bold 16px 'Segoe UI', sans-serif";
+            const crashW = ctx.measureText(crashText).width + 30;
+            const crashX = (this.canvas.width - crashW) / 2;
+            const crashY = this.canvas.height - 55;
+
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = "rgba(180, 30, 30, 0.6)";
+            ctx.beginPath();
+            ctx.roundRect(crashX, crashY, crashW, 32, 8);
+            ctx.fill();
+
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = "#ffffff";
             ctx.textAlign = "center";
-            ctx.fillText("Crashed! Use arrow keys to recover", this.canvas.width / 2, this.canvas.height - 40);
+            ctx.fillText(crashText, this.canvas.width / 2, crashY + 22);
             ctx.restore();
         }
 
@@ -531,10 +689,20 @@ export class Game {
                 const urgency = Math.max(0.3, 1 - dist / 600);
                 ctx.save();
                 ctx.globalAlpha = urgency;
-                ctx.font = "bold 20px 'Segoe UI', sans-serif";
-                ctx.fillStyle = "#ff4444";
+
+                const warnText = "Rhino approaching!";
+                ctx.font = "bold 18px 'Segoe UI', sans-serif";
+                const warnW = ctx.measureText(warnText).width + 30;
+                const warnX = (this.canvas.width - warnW) / 2;
+
+                ctx.fillStyle = "rgba(200, 30, 30, 0.6)";
+                ctx.beginPath();
+                ctx.roundRect(warnX, 36, warnW, 32, 8);
+                ctx.fill();
+
+                ctx.fillStyle = "#ffffff";
                 ctx.textAlign = "center";
-                ctx.fillText("Rhino approaching!", this.canvas.width / 2, 50);
+                ctx.fillText(warnText, this.canvas.width / 2, 58);
                 ctx.restore();
             }
         }

@@ -45,6 +45,26 @@ export abstract class Entity {
     }
 
     /**
+     * Draw a soft shadow ellipse beneath the entity for depth.
+     */
+    drawShadow() {
+        const image = this.imageManager.getImage(this.imageName);
+        if (!image) return;
+
+        const screen = this.canvas.worldToScreen(this.position.x, this.position.y);
+        const w = image.width * this.canvas.zoom;
+        const ctx = this.canvas.ctx;
+
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.ellipse(screen.x, screen.y + 3 * this.canvas.zoom, w * 0.35, w * 0.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    /**
      * Draw the entity to the canvas centered on the X,Y position.
      */
     draw() {
@@ -52,6 +72,8 @@ export abstract class Entity {
         if (!image) {
             return;
         }
+
+        this.drawShadow();
 
         const drawX = this.position.x - image.width / 2;
         const drawY = this.position.y - image.height / 2;
