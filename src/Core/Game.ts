@@ -22,6 +22,8 @@ import { CollectibleManager } from "../Entities/Collectibles/CollectibleManager"
 import { Rhino } from "../Entities/Rhino";
 import { STATES, Skier } from "../Entities/Skier";
 
+declare const __BUILD_TIMESTAMP__: string;
+
 const HIGH_SCORE_KEY = "skiGame_highScore";
 
 export class Game {
@@ -204,6 +206,13 @@ export class Game {
             this.showOptionsMenu();
         });
         document.getElementById("optionsBackBtn")!.addEventListener("click", () => this.hideOptionsMenu());
+
+        // Build timestamp
+        const timestampEl = document.getElementById("buildTimestamp");
+        if (timestampEl) {
+            const date = new Date(__BUILD_TIMESTAMP__);
+            timestampEl.textContent = `Last updated: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+        }
 
         // Zoom slider
         const zoomSlider = document.getElementById("zoomSlider") as HTMLInputElement;

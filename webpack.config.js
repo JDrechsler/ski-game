@@ -1,4 +1,5 @@
 const path = require("path");
+const webpack = require("webpack");
 const htmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 
@@ -30,6 +31,9 @@ const config = {
     },
 
     plugins: [
+        new webpack.DefinePlugin({
+            __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),
+        }),
         new htmlWebpackPlugin({
             title: "Ceros Ski",
             template: "src/index.html",

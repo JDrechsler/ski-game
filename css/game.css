@@ -247,6 +247,14 @@ canvas {
     min-width: 40px;
 }
 
+.build-timestamp {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+    font-size: 11px;
+    color: #aaa;
+}
+
 /* ========== MOBILE CONTROLS ========== */
 
 .mobile-controls {
