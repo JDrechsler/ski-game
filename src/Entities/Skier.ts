@@ -22,7 +22,7 @@ import { Animation } from "../Core/Animation";
 /**
  * The skier starts running at this speed. Saved in case speed needs to be reset at any point.
  */
-const STARTING_SPEED: number = 4;
+const STARTING_SPEED: number = 2.5;
 
 /**
  * The skier jumps for this amount of time in ms before returning to skiing.
@@ -163,14 +163,14 @@ export class Skier extends Entity {
     this.animations[STATES.STATE_FLIPPING] = new Animation(
       IMAGES_FLIP,
       false,
-      () => this.ski(this.direction, this.speed)
+      () => this.ski(this.direction, Math.max(this.speed, STARTING_SPEED))
     );
     this.animations[STATES.STATE_JUMPING] = new Animation(
       IMAGES_JUMP,
       false,
       () => {
         setTimeout(() => {
-          this.ski(this.direction, this.speed);
+          this.ski(this.direction, Math.max(this.speed, STARTING_SPEED));
         }, JUMPING_TIME);
       }
     );
@@ -400,7 +400,7 @@ export class Skier extends Entity {
    * to escape an obstacle before skiing down again. If they're already jumping, don't let them jump again.
    */
   jump() {
-    if (this.isCrashed() && this.isJumping()) {
+    if (this.isCrashed() || this.isJumping()) {
       return;
     }
     this.setState(STATES.STATE_JUMPING);
