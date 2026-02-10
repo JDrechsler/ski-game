@@ -27,6 +27,11 @@ const STARTING_OBSTACLE_GAP: number = 100;
 const STARTING_OBSTACLE_REDUCER: number = 300;
 
 /**
+ * Cap placement retries to avoid long/blocking loops when the world is dense.
+ */
+const MAX_PLACEMENT_ATTEMPTS: number = 25;
+
+/**
  * The chance that a new obstacle will be placed as the skier is moving. A lower number increases the chances.
  */
 const DEFAULT_OBSTACLE_CHANCE: number = 8;
@@ -121,48 +126,56 @@ export class ObstacleManager {
     /**
      * Place an obstacle to the left of the game window
      */
-    placeObstacleLeft(gameWindow: Rect) {
+    placeObstacleLeft(gameWindow: Rect): boolean {
         const placementArea = new Rect(gameWindow.left, gameWindow.top, gameWindow.left, gameWindow.bottom);
-        this.placeRandomObstacle(placementArea);
+        return this.placeRandomObstacle(placementArea);
     }
 
     /**
      * Place an obstacle to the right of the game window
      */
-    placeObstacleRight(gameWindow: Rect) {
+    placeObstacleRight(gameWindow: Rect): boolean {
         const placementArea = new Rect(gameWindow.right, gameWindow.top, gameWindow.right, gameWindow.bottom);
-        this.placeRandomObstacle(placementArea);
+        return this.placeRandomObstacle(placementArea);
     }
 
     /**
      * Place an obstacle above the game window
      */
-    placeObstacleTop(gameWindow: Rect) {
+    placeObstacleTop(gameWindow: Rect): boolean {
         const placementArea = new Rect(gameWindow.left, gameWindow.top, gameWindow.right, gameWindow.top);
-        this.placeRandomObstacle(placementArea);
+        return this.placeRandomObstacle(placementArea);
     }
 
     /**
      * Place an obstacle below the game window
      */
-    placeObstacleBottom(gameWindow: Rect) {
+    placeObstacleBottom(gameWindow: Rect): boolean {
         const placementArea = new Rect(gameWindow.left, gameWindow.bottom, gameWindow.right, gameWindow.bottom);
-        this.placeRandomObstacle(placementArea);
+        return this.placeRandomObstacle(placementArea);
     }
 
     /**
      * Place a random obstacle somewhere within the placement area. Obstacles are distanced from each other rather than
      * right on top of one another, so an open space must be calculated.
      */
-    placeRandomObstacle(placementArea: Rect) {
-        let position: Position | null;
-        do {
+    placeRandomObstacle(placementArea: Rect): boolean {
+        let position: Position | null = null;
+        for (let i = 0; i < MAX_PLACEMENT_ATTEMPTS; i++) {
             position = this.calculateOpenPosition(placementArea);
-        } while (!position);
+            if (position) {
+                break;
+            }
+        }
+
+        if (!position) {
+            return false;
+        }
 
         const newObstacle = new Obstacle(position.x, position.y, this.imageManager, this.canvas, this.obstacleTypes);
 
         this.obstacles.push(newObstacle);
+        return true;
     }
 
     setBiome(biome: iBiome) {
